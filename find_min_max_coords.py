@@ -32,6 +32,10 @@ def getModels(fileName: str):
     # Split the data into models
     models_str = ''.join(lines).split('ENDMDL\n')
 
+    # Initialize max and min coordinates
+    max_coords = {"x": float('-inf'), "y": float('-inf'), "z": float('-inf')}
+    min_coords = {"x": float('inf'), "y": float('inf'), "z": float('inf')}
+
     # Extract the atoms for each model
     models = []
     for model_str in models_str:
@@ -49,41 +53,21 @@ def getModels(fileName: str):
             atom = Atom(atom_id, atom_type, residue_type, chain_id, residue_id, x, y, z, occupancy, temp_factor,
                         element)
             atoms.append(atom)
+
+            # Update max and min coordinates
+            max_coords["x"] = max(max_coords["x"], x)
+            max_coords["y"] = max(max_coords["y"], y)
+            max_coords["z"] = max(max_coords["z"], z)
+            min_coords["x"] = min(min_coords["x"], x)
+            min_coords["y"] = min(min_coords["y"], y)
+            min_coords["z"] = min(min_coords["z"], z)
+
         model = Model(atoms)
         models.append(model)
 
-    return models
-
-
-def playMovie(models: list):
-    # Create the scatter plot
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-
-    # Start with the first frame
-    x = [atom.x for atom in models[0].atoms]
-    y = [atom.y for atom in models[0].atoms]
-    z = [atom.z for atom in models[0].atoms]
-    scatter = ax.scatter(x, y, z)
-
-    # Set the axes limits
-    ax.set_xlim([-500, 500])
-    ax.set_ylim([-500, 500])
-    ax.set_zlim([-500, 500])
-
-    plt.ion()
-    plt.show()
-
-    # Update the scatter plot for each frame
-    for model in models[1:]:
-        x = [atom.x for atom in model.atoms]
-        y = [atom.y for atom in model.atoms]
-        z = [atom.z for atom in model.atoms]
-        scatter._offsets3d = (x, y, z)
-        plt.draw()
-        plt.pause(0.1)  # Adjust this to control the speed of the animation
-
+    return models, max_coords, min_coords
 
 if __name__ == "__main__":
-    models = getModels('tra.pdb')
-    playMovie(models)
+    models, max_coords, min_coords = getModels('tra.pdb')
+    print(f"Max coordinates: {max_coords}")
+    print(f"Min coordinates: {min_coords}")
