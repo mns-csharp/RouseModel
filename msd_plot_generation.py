@@ -3,10 +3,10 @@ import matplotlib.pyplot as plt
 from typing import List
 
 class Point3d:
-    def __init__(self, x: float, y: float, z: float):
-        self.x = x
-        self.y = y
-        self.z = z
+    def __init__(self, xx: float, yy: float, zz: float):
+        self.x = xx
+        self.y = yy
+        self.z = zz
 
 class BoxBounds:
     def __init__(self, lower: float, upper: float):
