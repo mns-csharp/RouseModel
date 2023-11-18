@@ -1,7 +1,7 @@
 import os
 import matplotlib
 from scipy.signal import savgol_filter
-
+import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
@@ -74,8 +74,8 @@ def generate_msd_plots(source_dir, destination_dir,
                 plt.close()
 
 def main():
-    source_dir = r"C:\Users\pc\Documents\__protein design\SURPASS\Rouse Model\mc004"  # Add the path to your source directory
-    destination_dir = r"C:\Users\pc\Documents\__protein design\SURPASS\Rouse Model\mc004\msd~5"  # Add the path to your destination directory
+    source_dir = r"C:\Users\pc\Documents\__protein design\SURPASS\Rouse Model\mc005"  # Add the path to your source directory
+    destination_dir = r"C:\Users\pc\Documents\__protein design\SURPASS\Rouse Model\mc005\msd~3"  # Add the path to your destination directory
 
     conditions = {
         ## 'no_wrap': False,
