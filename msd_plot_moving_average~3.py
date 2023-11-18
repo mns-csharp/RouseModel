@@ -33,8 +33,9 @@ def denoise_data(data, window_length, polyorder):
     return list(zip(*denoised_data))
 
 def generate_msd_plots(source_dir, destination_dir,
-                       wrap=False, smooth=False, denoise=False, window_size=1000, window_length=11,
-                       polyorder=2):
+                       wrap=False, smooth=False, denoise=False,
+                       window_size=1000, window_length=11, polyorder=2,
+                       restrict_xrange=True):
     index = 0
     for subdir, dirs, files in os.walk(source_dir):
         for file in files:
@@ -53,6 +54,11 @@ def generate_msd_plots(source_dir, destination_dir,
                     msd_values = moving_average(msd_values, window_size)
                 plt.figure()
                 plt.loglog(range(len(msd_values)), msd_values)
+
+                # Set x-range to be maximum 1/100 of the total time if restrict_xrange is True
+                if restrict_xrange:
+                    plt.xlim(1, len(msd_values) / 100)
+
                 plt.xlabel("MC-steps")
                 plt.ylabel(f"{'Smoothed ' if smooth else ''}{'Denoised ' if denoise else ''}MSD")
                 plt.title(f"{'Smoothed ' if smooth else ''}{'Denoised ' if denoise else ''}MSD vs MC-steps (Log-Log Scale){', No Wrap' if not wrap else ''}")
@@ -69,15 +75,15 @@ def generate_msd_plots(source_dir, destination_dir,
 
 def main():
     source_dir = r"C:\Users\pc\Documents\__protein design\SURPASS\Rouse Model\mc004"  # Add the path to your source directory
-    destination_dir = r"C:\Users\pc\Documents\__protein design\SURPASS\Rouse Model\mc004\msd"  # Add the path to your destination directory
+    destination_dir = r"C:\Users\pc\Documents\__protein design\SURPASS\Rouse Model\mc004\msd~5"  # Add the path to your destination directory
 
     conditions = {
-        'no_wrap': False,
+        ## 'no_wrap': False,
         'wrap': True,
     }
 
     denoising = {
-        'no_denoise': False,
+        ## 'no_denoise': False,
         'denoise': True,
     }
 
@@ -87,9 +93,9 @@ def main():
     }
 
     # Define the range of values for each parameter
-    window_sizes = [5, 750, 1500]
-    window_lengths = [11, 21, 31]
-    polyorders = [1, 2, 3]
+    window_sizes = [5, 10, 25, 50, 100, 200]
+    window_lengths = [21]
+    polyorders = [2]
 
     # Nested loops to iterate over all combinations of parameters
     for wrap in conditions.values():
