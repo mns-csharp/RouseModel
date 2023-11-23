@@ -103,25 +103,22 @@ def write_image_to_directory(img: io.BytesIO, directory: str, filename: str) -> 
 def process_directories(source_path: str=SOURCE_PATH, dest_path: str=DEST_PATH, dat_file: str=DAT_FILE, r2_dat_file: str=R2_DAT_FILE, time_interval: float = 1.0) -> None:
     """Process all directories in source_path, calculate tau_R for different N, and write results to dest_path."""
     directories = get_directories(source_path)
-    tau_R_values = []  # Renamed from log_tau_R
-    N_values = []  # Renamed from log_N
+    tau_R_values = []
+    N_values = []
     for directory in directories:
         filename = os.path.join(directory, dat_file)
         r2_filename = os.path.join(directory, r2_dat_file)
         if os.path.isfile(filename) and os.path.isfile(r2_filename):
             r2 = load_r2(r2_filename)
-            g_R = autocorrelation_function(r2)
-            t = np.arange(len(g_R)) * time_interval  # Assuming that the time steps are equally spaced
-            tau_R = fit_exponential_decay(g_R, t)
+            # Replace the following line with calculate_tau_R
+            tau_R = calculate_tau_R(r2, time_interval)
             if tau_R is not None and tau_R > 0.0:
-                tau_R_values.append(tau_R)  # Remove math.log from here
+                tau_R_values.append(tau_R)
                 _, _, _, N = extract_values(os.path.basename(directory))
-                N_values.append(N ** 2.2)  # Consider the scaling τ_R ≈ N^2.2, remove math.log from here
+                N_values.append(N ** 2.2)
         else:
             print(f"File {filename} or {r2_filename} does not exist.")
-        # end-of-if-else
-    # end-of-for-loop
-    img = plot_log_tauR_vs_log_N(np.array(tau_R_values), np.array(N_values))  # Use the new name here
+    img = plot_log_tauR_vs_log_N(np.array(tau_R_values), np.array(N_values))
     write_image_to_directory(img, dest_path, 'N_vs_tau_R_plot_2.png')
 
 
