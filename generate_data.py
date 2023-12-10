@@ -12,11 +12,11 @@ def run_surpass(n_residues_min=50, n_residues_max=2001, inner_cycles=10, outer_c
     for n_residues in n_residues_values:
         # Round n_residues to the nearest integer, as it must be an integer
         n_residues = round(n_residues)
-        # Create the output directory name
+        # Create the output directory_path name
         dir_name = f'run{run_count}_inner{inner_cycles}_outer{outer_cycles}_factor{cycle_factor}_residue{n_residues}'
-        # Create the directory if it doesn't exist
+        # Create the directory_path if it doesn't exist
         os.makedirs(dir_name, exist_ok=True)
-        # Change the working directory
+        # Change the working directory_path
         os.chdir(dir_name)
         # Form the Surpass command
         cmd = [
@@ -29,7 +29,7 @@ def run_surpass(n_residues_min=50, n_residues_max=2001, inner_cycles=10, outer_c
         # Run the Surpass command
         subprocess.run(cmd)
         run_count = run_count + 1
-        # Change back to the parent directory
+        # Change back to the parent directory_path
         os.chdir('..')
 
 

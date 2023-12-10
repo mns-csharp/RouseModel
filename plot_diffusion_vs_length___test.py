@@ -27,7 +27,7 @@ def plot_diffusion_vs_length___():
     img = plot_diffusion_vs_length(D, N)
 
     # Write the BytesIO object to a file
-    with open("test_plot.png", "wb") as f:
+    with open("plot_diffusion_vs_length___test.png", "wb") as f:
         f.write(img.read())
 
 if __name__ == "__main__":

@@ -1,4 +1,5 @@
-# File: msd_vs_tau_plot.py
+# File: msd_vs_time_plot.py
+
 import os
 import numpy as np
 import matplotlib
@@ -12,76 +13,61 @@ import datetime
 
 
 SOURCE_PATH = r'C:\git\rouse_data\mc009'
-DEST_PATH = r'C:\git\rouse_data\mc009\msd~1'
+DEST_PATH = r'C:\git\rouse_data\mc009\time-vs-msd'
 DAT_FILE = "cm.dat"
-TAU_MAX = 100
 TEXT_FILE_NAME = "curvature.txt"
 HEADERS = 'tauMax, inner, outer, factor, res, curvature\n'
 PATTERN = r'run\d+_inner(\d+)_outer(\d+)_factor(\d+)_residue(\d+)'
-
-
-def current_date_to_dir_name() -> str:
-    """Convert the current date and time into a directory_path name."""
-    now = datetime.datetime.now()
-    dir_name = now.strftime('%Y-%m-%d_%H-%M-%S')  # Format the datetime object as a string
-    return dir_name
-
+TAU_MAX = 100
 
 def load_CM_positions(filename: str) -> np.ndarray:
-    """Load positions from a file, skipping the first row (header)."""
+    """Load times and positions from a file, skipping the first row (header)."""
     return np.loadtxt(filename, skiprows=1)
 
+import numpy as np
+def calculate_MSD(data: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Calculate Mean Square Displacement (tauR) for each data point in 3D.
+    """
 
-def get_lag_times(tau_max: int) -> np.ndarray:
-    """Generate lag times based on tauMax."""
-    return np.arange(1, tau_max + 1)
+    # Generate a times array based on the length of the data
+    times = np.arange(len(data))
+    # Calculate displacements in x, y, and z directions
+    displacements = np.diff(data, axis=0)
+
+    # Calculate squared displacements for each dimension
+    squared_displacements = displacements**2
+
+    # Sum the squared displacements in all three dimensions to get total squared displacement
+    total_squared_displacement = np.sum(squared_displacements, axis=1)
+
+    # Calculate the Mean Squared Displacement (tauR) by cumulatively summing the total squared
+    # displacements and dividing by the number of points at each step. np.arange(1, len(data))
+    # generates numbers from 1 to len(data) - 1.
+    MSD = np.cumsum(total_squared_displacement) / np.arange(1, len(data))
+
+    MSD = np.sqrt(MSD)
+    # Return the times array (excluding the first time point, as np.diff reduces the array length by one)
+    # and the calculated tauR as a tuple
+    return times[1:], MSD
 
 
-def calculate_MSD(positions: np.ndarray, tau_max: int=0) -> tuple[np.ndarray, np.ndarray]:
-    """Calculate Mean Square Displacement (tauR) for each lag time."""
-    if tau_max != 0:
-        tau_max = int(len(positions) / tau_max)
-    else:
-        tau_max = len(positions) - 1
-    tau = get_lag_times(tau_max)
-    MSD = np.empty_like(tau, dtype=float)
-    for i in range(1, tau_max + 1):
-        displacements = positions[i:] - positions[:-i]
-        squared_displacements = np.sum(displacements**2, axis=1)
-        MSD[i - 1] = np.mean(squared_displacements) if squared_displacements.size > 0 else np.nan
-    return tau, MSD
-
-
-
-
-
-def plot_msd_vs_tau(tau: np.ndarray, MSD: np.ndarray) -> io.BytesIO:
-    """Plot tauR versus N on a log-log scale and save the figure to a BytesIO object."""
+def plot_msd_vs_time(times: np.ndarray, MSD: np.ndarray) -> io.BytesIO:
+    """Plot tauR versus time on a log-log scale and save the figure to a BytesIO object."""
+    if np.any(times <= 0) or np.any(MSD <= 0):
+        print("Warning: Data contains non-positive values which cannot be log-scaled.")
+        return None
     plt.figure()
-    plt.loglog(tau, MSD, marker='o')
-    plt.xlabel('Lag time N')
+    plt.scatter(times, MSD, marker='o')
+    plt.xlabel('Time (s)')
     plt.ylabel('tauR')
-    plt.title('tauR vs. Lag time')
+    plt.title('tauR vs. Time (Log-Log Scale)')
     plt.grid(True)
     img = io.BytesIO()
     plt.savefig(img, format='png')
     plt.close()
     img.seek(0)
     return img
-
-
-def calculate_curvature(tau: np.ndarray, MSD: np.ndarray) -> np.ndarray:
-    """Calculate curvature of tauR using UnivariateSpline."""
-    if len(tau) < 4 or len(MSD) < 4:
-        return np.array([])
-    #end-of-if
-    spl = UnivariateSpline(tau, MSD)
-    spl_1d = spl.derivative(n=1)
-    spl_2d = spl.derivative(n=2)
-    curvature = np.abs(spl_2d(tau)) / (1 + spl_1d(tau)**2)**(3/2)
-    return np.round(curvature, 3)
-#end-of-function
-
 
 def write_image_to_directory(img: io.BytesIO, directory: str, filename: str) -> None:
     """Write image data to a file in the specified directory_path."""
@@ -100,6 +86,24 @@ def clear_text_file(filepath: str) -> None:
             file.write('')
         #end-of-with
     #end-of-if
+#end-of-function
+
+
+def get_directories(dir_path: str, pattern: str='run*_inner*_outer*_factor*_res*') -> list[str]:
+    """This function retrieves all directories in the specified path that match a given pattern."""
+    return glob.glob(os.path.join(dir_path, pattern))
+
+
+def calculate_curvature(tau: np.ndarray, MSD: np.ndarray) -> np.ndarray:
+    """Calculate curvature of tauR using UnivariateSpline."""
+    if len(tau) < 4 or len(MSD) < 4:
+        return np.array([])
+    #end-of-if
+    spl = UnivariateSpline(tau, MSD)
+    spl_1d = spl.derivative(n=1)
+    spl_2d = spl.derivative(n=2)
+    curvature = np.abs(spl_2d(tau)) / (1 + spl_1d(tau)**2)**(3/2)
+    return np.round(curvature, 3)
 #end-of-function
 
 
@@ -141,11 +145,6 @@ def write_curvature_to_textfile(directory: str, curvature_value: float, dest_pat
 #end-of-function
 
 
-def get_directories(dir_path: str, pattern: str='run*_inner*_outer*_factor*_res*') -> list[str]:
-    """This function retrieves all directories in the specified path that match a given pattern."""
-    return glob.glob(os.path.join(dir_path, pattern))
-
-
 def process_directories(source_path: str=SOURCE_PATH, dest_path: str=DEST_PATH, dat_file: str=DAT_FILE) -> None:
     """Process all directories in sourcePath, calculate tauR and curvature, and write results to dest_path."""
     clear_text_file(os.path.join(dest_path, TEXT_FILE_NAME))
@@ -153,11 +152,13 @@ def process_directories(source_path: str=SOURCE_PATH, dest_path: str=DEST_PATH, 
     for directory in directories:
         filename = os.path.join(directory, dat_file)
         if os.path.isfile(filename):
-            positions = load_CM_positions(filename)
-            tau, MSD = calculate_MSD(positions)  #, TAU_MAX)
-            img = plot_msd_vs_tau(tau, MSD)
-            write_image_to_directory(img, dest_path, os.path.basename(directory) + '.png')
-            curvature = calculate_curvature(tau, MSD)
+            data = load_CM_positions(filename)
+            times, MSD = calculate_MSD(data)
+            times.sort()  # Ensure times are sorted
+            img = plot_msd_vs_time(times, MSD)
+            if img is not None:
+                write_image_to_directory(img, dest_path, os.path.basename(directory) + '.png')
+            curvature = calculate_curvature(times, MSD)
             avg_curvature = np.nan if curvature.size == 0 else np.mean(curvature)
             write_curvature_to_textfile(directory, avg_curvature, dest_path)
         else:
@@ -169,3 +170,5 @@ def process_directories(source_path: str=SOURCE_PATH, dest_path: str=DEST_PATH, 
 
 if __name__ == "__main__":
     process_directories()
+
+

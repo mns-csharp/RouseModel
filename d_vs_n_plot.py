@@ -10,12 +10,12 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 
-SOURCE_PATH = r'C:\git\rouse_data\mc008'
-DEST_PATH = r'C:\git\rouse_data\mc008\msd~1'
+SOURCE_PATH = r'C:\git\rouse_data\mc010'
+DEST_PATH = r'C:\git\rouse_data\mc010\[tauR]'
 DAT_FILE = "cm.dat"
 TAU_MAX = 100
 TEXT_FILE_NAME = "curvature.txt"
-HEADERS = 'tau_max, inner, outer, factor, res, curvature\n'
+HEADERS = 'tauMax, inner, outer, factor, res, curvature\n'
 
 
 def load_CM_positions(filename: str) -> np.ndarray:
@@ -35,18 +35,18 @@ def clear_text_file(filepath: str) -> None:
 
 from scipy.stats import linregress
 def calculate_slope(tau: np.ndarray, MSD: np.ndarray) -> float:
-    """Calculate slope of the MSD-vs-tau curve using linear regression."""
+    """Calculate slope of the tauR-vs-N curve using linear regression."""
     slope, _, _, _, _ = linregress(x=MSD, y=tau)
     return slope
 
 
 def get_lag_times(tau_max: int) -> np.ndarray:
-    """Generate lag times based on tau_max."""
+    """Generate lag times based on tauMax."""
     return np.arange(1, tau_max + 1)
 
 
 def calculate_MSD(positions: np.ndarray, tau_max: int=0) -> tuple[np.ndarray, np.ndarray]:
-    """Calculate Mean Square Displacement (MSD) for each lag time."""
+    """Calculate Mean Square Displacement (tauR) for each lag time."""
     if tau_max != 0:
         tau_max = int(len(positions) / tau_max)
     else:
@@ -61,14 +61,14 @@ def calculate_MSD(positions: np.ndarray, tau_max: int=0) -> tuple[np.ndarray, np
 
 
 def calculate_D(tau: np.ndarray, MSD: np.ndarray, d: int) -> float:
-    """Calculate the diffusion coefficient from the MSD and delay time."""
+    """Calculate the diffusion coefficient from the tauR and delay time."""
     slope: float = calculate_slope(tau, MSD)
     D = slope / (2 * d)
     return D
 
 
 def write_image_to_directory(img: io.BytesIO, directory: str, filename: str) -> None:
-    """Write image data to a file in the specified directory."""
+    """Write image data to a file in the specified directory_path."""
     os.makedirs(directory, exist_ok=True)
     filepath = os.path.join(directory, filename)
     with open(filepath, 'wb') as f:
@@ -107,13 +107,13 @@ def extract_values(input_string: str) -> tuple[int, int, int, int]:
             raise ValueError("Input string does not match required format.")
         #end-of-if-else
     except ValueError as e:
-        print(f"Error with directory {input_string}: {str(e)}")
+        print(f"Error with directory_path {input_string}: {str(e)}")
     #end-of-try-except
 #end-of-function
 
 
 def process_directories(source_path: str=SOURCE_PATH, dest_path: str=DEST_PATH, dat_file: str=DAT_FILE) -> None:
-    """Process all directories in source_path, calculate MSD and curvature, and write results to dest_path."""
+    """Process all directories in sourcePath, calculate tauR and curvature, and write results to dest_path."""
     print("START")
     clear_text_file(os.path.join(dest_path, TEXT_FILE_NAME))
     directories = get_directories(source_path)

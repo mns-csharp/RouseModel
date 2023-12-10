@@ -13,12 +13,12 @@ matplotlib.use('Agg')
 import math
 from scipy.optimize import curve_fit
 
-SOURCE_PATH = r'C:\git\rouse_data\mc008'
-DEST_PATH = r'C:\git\rouse_data\mc008\msd~1'
+SOURCE_PATH = r'C:\git\rouse_data\mc010'
+DEST_PATH = r'C:\git\rouse_data\mc010'
 DAT_FILE = "cm.dat"
 TAU_MAX = 100
 TEXT_FILE_NAME = "curvature.txt"
-HEADERS = 'tau_max, inner, outer, factor, res, curvature\n'
+HEADERS = 'tauMax, inner, outer, factor, res, curvature\n'
 R2_DAT_FILE = "r2.dat"
 
 def load_r2(filename: str) -> np.ndarray:
@@ -67,7 +67,7 @@ def extract_values(input_string: str) -> tuple[int, int, int, int]:
             raise ValueError("Input string does not match required format.")
         #end-of-if-else
     except ValueError as e:
-        print(f"Error with directory {input_string}: {str(e)}")
+        print(f"Error with directory_path {input_string}: {str(e)}")
     #end-of-try-except
 #end-of-function
 
@@ -91,7 +91,7 @@ def get_directories(dir_path: str, pattern: str='run*_inner*_outer*_factor*_res*
     return glob.glob(os.path.join(dir_path, pattern))
 
 def write_image_to_directory(img: io.BytesIO, directory: str, filename: str) -> None:
-    """Write image data to a file in the specified directory."""
+    """Write image data to a file in the specified directory_path."""
     os.makedirs(directory, exist_ok=True)
     filepath = os.path.join(directory, filename)
     with open(filepath, 'wb') as f:
@@ -101,7 +101,7 @@ def write_image_to_directory(img: io.BytesIO, directory: str, filename: str) -> 
 
 
 def process_directories(source_path: str=SOURCE_PATH, dest_path: str=DEST_PATH, dat_file: str=DAT_FILE, r2_dat_file: str=R2_DAT_FILE, time_interval: float = 1.0) -> None:
-    """Process all directories in source_path, calculate tau_R for different N, and write results to dest_path."""
+    """Process all directories in sourcePath, calculate tau_R for different N, and write results to dest_path."""
     directories = get_directories(source_path)
     tau_R_values = []
     N_values = []
@@ -110,7 +110,7 @@ def process_directories(source_path: str=SOURCE_PATH, dest_path: str=DEST_PATH, 
         r2_filename = os.path.join(directory, r2_dat_file)
         if os.path.isfile(filename) and os.path.isfile(r2_filename):
             r2 = load_r2(r2_filename)
-            # Replace the following line with calculate_tau_R
+            # Replace the following line with calculateTauR
             tau_R = calculate_tau_R(r2, time_interval)
             if tau_R is not None and tau_R > 0.0:
                 tau_R_values.append(tau_R)
