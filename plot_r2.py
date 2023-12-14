@@ -1,7 +1,7 @@
 # File: plot_r2.py
 import os
 import matplotlib
-matplotlib.use('Agg')
+matplotlib.use('QT5Agg')
 import numpy as np
 import matplotlib.pyplot as plt
 from pandas.plotting import autocorrelation_plot
@@ -22,7 +22,7 @@ def autocorrelation(data, tau):
 
 def main():
     # Assuming you have already loaded your R values
-    data = np.loadtxt("r2.dat")
+    data = np.loadtxt("experiments/r2.dat")
     # Sample data
     tau_values = range(1001)  # Range of tau values from 0 to 1000
 
@@ -32,13 +32,13 @@ def main():
 
     # Plot autocorrelation values
     plt.figure(figsize=(10, 6))
-    plt.loglog(tau_values, autocorr_values)
+    plt.scatter(tau_values, autocorr_values)
     plt.xlabel('Tau')
     plt.ylabel('Autocorrelation')
     plt.title('Autocorrelation Plot')
     plt.grid(True)
-    plt.savefig("autocorrelation_of_R2.png")
-
+    #plt.savefig("autocorrelation_of_R2.png")
+    plt.show()
 
 if __name__ == '__main__':
     main()
