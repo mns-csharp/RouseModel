@@ -26,6 +26,6 @@ tau_R = np.logspace(1, 7, num=50)
 img = plot_log_tauR_vs_log_N(tau_R, N)
 
 # Write the BytesIO object to a file
-with open("test_plot.png", "wb") as f:
+with open("../test_plot.png", "wb") as f:
     f.write(img.read())
 

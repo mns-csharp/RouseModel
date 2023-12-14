@@ -30,7 +30,7 @@ def run_surpass(n_residues_min=50, n_residues_max=2001, inner_cycles=10, outer_c
         subprocess.run(cmd)
         run_count = run_count + 1
         # Change back to the parent directory_path
-        os.chdir('..')
+        os.chdir('../..')
 
 
 if __name__ == "__main__":

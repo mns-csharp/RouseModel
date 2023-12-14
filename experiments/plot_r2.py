@@ -32,7 +32,7 @@ def main():
 
     # Plot autocorrelation values
     plt.figure(figsize=(10, 6))
-    plt.plot(tau_values, autocorr_values)
+    plt.loglog(tau_values, autocorr_values)
     plt.xlabel('Tau')
     plt.ylabel('Autocorrelation')
     plt.title('Autocorrelation Plot')

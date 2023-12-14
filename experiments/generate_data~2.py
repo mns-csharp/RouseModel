@@ -31,7 +31,7 @@ def run_surpass(n_residues_range, inner_cycles_range, outer_cycles_range, cycle_
                     run_count = run_count + 1
 
                     # Change back to the parent directory_path
-                    os.chdir('..')
+                    os.chdir('../..')
 
 # Call the function
 n_residues_range = range(100, 1001, 100)
