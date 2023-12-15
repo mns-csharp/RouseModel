@@ -87,6 +87,7 @@ def plot_diffusion_coefficients(data_path, time_step):
         plt.xlabel('Residue Length')
         plt.ylabel('Diffusion Coefficient')
         plt.title('Diffusion Coefficient by Residue Length')
+        plt.savefig('d_vs_n_plot_2.png')
         plt.show()
     except Exception as ex:
         print(str(ex))

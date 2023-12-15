@@ -57,10 +57,10 @@ def main():
     plt.xlim(left=1)
     plt.ylim(bottom=1)
 
-    directoryPath = os.path.dirname(filePath)
-    chartFileName = "chart.png"
-    chartFilePath = os.path.join(directoryPath, chartFileName)
-
+    # directoryPath = os.path.dirname(filePath)
+    chartFileName = "msd_vs_time_plot_2.png"
+    # chartFilePath = os.path.join(directoryPath, chartFileName)
+    plt.savefig(chartFileName)
     plt.show()
 
 if __name__ == "__main__":

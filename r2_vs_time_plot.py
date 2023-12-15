@@ -37,7 +37,7 @@ def main():
     plt.ylabel('Autocorrelation')
     plt.title('Autocorrelation Plot')
     plt.grid(True)
-    #plt.savefig("autocorrelation_of_R2.png")
+    plt.savefig("r2_vs_time_plot.png")
     plt.show()
 
 if __name__ == '__main__':

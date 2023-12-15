@@ -80,22 +80,69 @@ class R2:
 
         return x_points, y_points
 
+import math
+
+def linear_fit(x, y):
+    n = len(x)
+    sum_x = sum(x)
+    sum_y = sum(y)
+    sum_xy = sum(xi * yi for xi, yi in zip(x, y))
+    sum_x_squared = sum(xi ** 2 for xi in x)
+
+    # Calculate the slope (b) and intercept (a) for y = a + bx
+    b = (n * sum_xy - sum_x * sum_y) / (n * sum_x_squared - sum_x ** 2)
+    a = (sum_y - b * sum_x) / n
+
+    return a, b
+
+def calculate_deviation(y, y_fit):
+    deviations = [abs((y_i - y_fit_i) / y_fit_i) for y_i, y_fit_i in zip(y, y_fit)]
+    return deviations
+
 def button4_click():
     try:
-        directory_path = "C:/git/rouse_data/mc010"
+        directory_path = "C:/git/rouse_data/mc004"
 
         x, y = R2.process_directories(directory_path)
+        log_x = [math.log(xi) for xi in x]
+        log_y = [math.log(yi) for yi in y]
+
+        # Perform a linear fit on the log-log transformed data
+        a, b = linear_fit(log_x, log_y)
+
+        # Convert the fitted line coefficients back to the original scale
+        a_exp = math.exp(a)
+        fitted_line = [a_exp * xi**b for xi in x]
 
         plt.figure()
-        plt.scatter(x, y)
+        plt.scatter(x, y, label='Data')
+        plt.plot(x, fitted_line, color='red', label=f'Fitted line (slope={b:.2f})')
         plt.xscale('log')
         plt.yscale('log')
         plt.xlabel("N Values")
         plt.ylabel("tau_R Values")
         plt.title("tau_R vs N plot")
+        plt.legend()
         plt.grid(True)
-        plt.savefig('N_vs_tau_R_plot_4.png')
-        plt.show()
+        # plt.savefig('N_vs_tau_R_plot_4.png')
+        # plt.show()
+
+        # Checking the compliance with the Rouse model
+        expected_slope = 2.0
+        if abs(b - expected_slope) > 0.1:  # Allowing some tolerance
+            print(f"The chain lengths do not comply with the Rouse theory (slope={b:.2f}).")
+        else:
+            print(f"The chain lengths comply with the Rouse theory (slope={b:.2f}).")
+
+        # Identifying significant deviations
+        deviations = calculate_deviation(y, fitted_line)
+        threshold = 0.1  # Set a threshold for significant deviation
+        significant_deviations = [i for i, dev in enumerate(deviations) if dev > threshold]
+        if significant_deviations:
+            print("Significant deviations found at chain lengths:")
+            for index in significant_deviations:
+                print(f"N = {x[index]}, tau_R = {y[index]}, Fitted tau_R = {fitted_line[index]}")
+
     except Exception as ex:
         print(f"An exception occurred: {ex}")
 
