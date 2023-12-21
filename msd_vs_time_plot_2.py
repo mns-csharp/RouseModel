@@ -56,7 +56,9 @@ def main():
     plt.yscale('log')
     plt.xlim(left=1)
     plt.ylim(bottom=1)
-
+    plt.xlabel('Time step')
+    plt.ylabel('MSD')
+    plt.title('MSD by time')
     # directoryPath = os.path.dirname(filePath)
     chartFileName = "msd_vs_time_plot_2.png"
     # chartFilePath = os.path.join(directoryPath, chartFileName)
