@@ -55,11 +55,11 @@ class R2:
 
 def main():
     directories = [
-        "C:/git/rouse_data/mc006",
-        "C:/git/rouse_data/mc007",
-        "C:/git/rouse_data/mc008",
-        "C:/git/rouse_data/mc009",
-        "C:/git/rouse_data/mc010"
+        "/home/mohammad/rouse_data/mc006",
+        "/home/mohammad/rouse_data/mc007",
+        "/home/mohammad/rouse_data/mc008",
+        "/home/mohammad/rouse_data/mc009",
+        "/home/mohammad/rouse_data/mc010"
     ]
 
     combined_residues = {}
