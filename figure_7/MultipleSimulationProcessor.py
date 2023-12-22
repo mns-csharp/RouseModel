@@ -1,8 +1,8 @@
 import os
 import re
 
-from figure_7.LineChartAggregator import LineChartAggregator
-from figure_7.SimulationProcessor import SimulationProcessor
+from LineChartAggregator import LineChartAggregator
+from SimulationProcessor import SimulationProcessor
 
 class MultipleSimulationProcessor:
     def __init__(self, root_directory):
@@ -32,7 +32,8 @@ class MultipleSimulationProcessor:
         return self.all_intersection_data
 
 if __name__ == '__main__':
-    root_dir = r'C:\git\rouse_data'
+    # root_dir = r'C:\git\rouse_data'
+    root_dir = r'/home/mohammad/rouse_data'
     multi_sim_processor = MultipleSimulationProcessor(root_dir)
     multi_sim_processor.process_all_simulations()
     all_intersection_data = multi_sim_processor.get_all_intersection_data()

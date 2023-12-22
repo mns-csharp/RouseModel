@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 import numpy as np
 
-from figure_7.R2AutocorrelationProcessor import R2AutocorrelationProcessor
+from R2AutocorrelationProcessor import R2AutocorrelationProcessor
 
 
 class SimulationProcessor:
