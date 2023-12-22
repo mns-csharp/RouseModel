@@ -34,7 +34,7 @@ class SimulationProcessor:
             dir_path = os.path.join(self.root_directory, dir_name)
             try:
                 # Initialize the R2AutocorrelationProcessor for the current directory
-                print(r'Now processing residue: {dir_path}')
+                print(f'Now processing residue: {dir_path}')
                 r2_processor = R2AutocorrelationProcessor(dir_path)
                 # Get the intersection data from the current processor
                 x_intersection, y_intersection = r2_processor.get_intersection_data()

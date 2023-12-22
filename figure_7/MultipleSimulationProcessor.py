@@ -20,7 +20,7 @@ class MultipleSimulationProcessor:
             # Check if the item is a directory and matches the pattern
             if os.path.isdir(item_path) and dir_pattern.match(item):
                 # Initialize a SimulationProcessor for the current directory
-                print(r'Now processing simulation {item_path}')
+                print(f'Now processing simulation {item_path}')
                 sim_processor = SimulationProcessor(item_path)
                 # Process simulations in the current directory
                 sim_processor.process_simulations()

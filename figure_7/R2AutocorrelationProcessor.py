@@ -14,7 +14,7 @@ class R2AutocorrelationProcessor:
 
     def get_r2_values_from_file(self, dir_path):
         file_path = os.path.join(dir_path, 'r2.dat')
-        print(r'Now processing file: {file_path}')
+        print(f'Now processing file: {file_path}')
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"The file {file_path} was not found.")
         r2_values = np.loadtxt(file_path, skiprows=1)
@@ -52,7 +52,7 @@ class R2AutocorrelationProcessor:
     def plot_intersection(self, plot_file_name):
         if self.intersection is not None:
             plt.figure(figsize=(10, 5))
-            plt.plot(self.autocorrelation, label='Autocorrelation')
+            plt.plot(self.intersection, label='Intersection')
             plt.axvline(x=self.intersection, color='r', linestyle='--', label='Intersection (1/e)')
             plt.xlabel('Lag')
             plt.ylabel('Autocorrelation')
