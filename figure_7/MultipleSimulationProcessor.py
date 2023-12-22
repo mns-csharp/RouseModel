@@ -47,4 +47,4 @@ if __name__ == '__main__':
         chart_aggregator.add_data(x_inter, y_inter)
 
     # Draw the aggregate plot
-    chart_aggregator.plot()
+    chart_aggregator.plot('multiple_simulation_plot')

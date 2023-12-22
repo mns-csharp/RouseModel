@@ -32,7 +32,7 @@ class LineChartAggregator:
 
         return common_x, y_mean, y_std
 
-    def plot(self):
+    def plot(self, plot_file_name):
         common_x, y_mean, y_std = self.get_mean_and_stddev_points()
 
         # Plot the mean line chart
@@ -48,6 +48,7 @@ class LineChartAggregator:
         plt.legend()
 
         # Show the plot
+        plt.savefig(plot_file_name + '.png')
         plt.show()
 
 
@@ -61,4 +62,5 @@ if __name__ == '__main__':
     chart_aggregator.add_data(np.arange(23), np.random.normal(loc=0, scale=1, size=23))
 
     # Draw the plot
-    chart_aggregator.plot()
+    chart_aggregator.plot('chart_aggregator_plot')
+

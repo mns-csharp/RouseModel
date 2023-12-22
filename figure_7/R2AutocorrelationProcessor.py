@@ -38,7 +38,7 @@ class R2AutocorrelationProcessor:
                 return intersection
         return None
 
-    def plot_autocorrelation(self):
+    def plot_autocorrelation(self, plot_file_name):
         plt.figure(figsize=(10, 5))
         plt.plot(self.autocorrelation, label='Autocorrelation')
         plt.xlabel('Lag')
@@ -46,9 +46,10 @@ class R2AutocorrelationProcessor:
         plt.title('Autocorrelation of $r^2$ Values')
         plt.legend()
         plt.grid(True)
+        plt.savefig(plot_file_name + '.png')
         plt.show()
 
-    def plot_intersection(self):
+    def plot_intersection(self, plot_file_name):
         if self.intersection is not None:
             plt.figure(figsize=(10, 5))
             plt.plot(self.autocorrelation, label='Autocorrelation')
@@ -58,6 +59,7 @@ class R2AutocorrelationProcessor:
             plt.title('Intersection of Autocorrelation with $1/e$')
             plt.legend()
             plt.grid(True)
+            plt.savefig(plot_file_name + '.png')
             plt.show()
         else:
             print("No intersection with 1/e was found.")
@@ -98,7 +100,7 @@ if __name__ == '__main__':
     x_intersection, y_intersection = processor.get_intersection_data()
 
     # To plot autocorrelation:
-    processor.plot_autocorrelation()
+    processor.plot_autocorrelation('r2_autocorrelation_plot')
 
     # To plot intersection:
-    processor.plot_intersection()
+    processor.plot_intersection('r2_intersection_plot')

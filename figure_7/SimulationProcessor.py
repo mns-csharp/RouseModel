@@ -49,7 +49,7 @@ class SimulationProcessor:
         # Return the collected intersection data
         return self.intersection_data
 
-    def plot_intersection_data_linear(self):
+    def plot_intersection_data_linear(self, plot_file_name):
         if not self.intersection_data:
             print("No intersection data to plot.")
             return
@@ -64,9 +64,10 @@ class SimulationProcessor:
         plt.title('Intersection of Autocorrelation with $1/e$')
         plt.legend()
         plt.grid(True)
+        plt.savefig(plot_file_name + '.png')
         plt.show()
 
-    def plot_intersection_data_loglog(self):
+    def plot_intersection_data_loglog(self, plot_file_name):
         if not self.intersection_data:
             print("No intersection data to plot.")
             return
@@ -79,6 +80,7 @@ class SimulationProcessor:
         plt.title('Log-Log Plot of Intersection of Autocorrelation with $1/e$')
         plt.legend()
         plt.grid(True, which="both", ls="--")  # Grid enabled for both major and minor ticks
+        plt.savefig(plot_file_name + '.png')
         plt.show()
 
 # Example of using the SimulationProcessor class
@@ -86,5 +88,5 @@ if __name__ == '__main__':
     root_dir = r'C:\git\rouse_data\mc001'
     sim_processor = SimulationProcessor(root_dir)
     sim_processor.process_simulations()
-    sim_processor.plot_intersection_data_linear()
-    sim_processor.plot_intersection_data_loglog()
+    sim_processor.plot_intersection_data_linear('mc_intersection_linear')
+    sim_processor.plot_intersection_data_loglog('mc_intersection_log_log')
