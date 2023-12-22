@@ -101,13 +101,13 @@ def extractValues(directoryName: str) -> tuple[int, int, int, int]:
             raise ValueError("Input string does not match required format.")
         #end-of-if-else
     except ValueError as e:
-        print(f"Error with directory_path {directoryName}: {str(e)}")
+        print(f"Error with mc_directory_path {directoryName}: {str(e)}")
     #end-of-try-except
 #end-of-function
 
 
 def writeImage(img: io.BytesIO, directory: str, filename: str) -> None:
-    """Write image data to a file in the specified directory_path."""
+    """Write image data to a file in the specified mc_directory_path."""
     os.makedirs(directory, exist_ok=True)
     filepath = os.path.join(directory, filename)
     with open(filepath, 'wb') as f:
@@ -122,7 +122,7 @@ def load_CM_positions(filename: str) -> np.ndarray:
 
 
 def processDir(directory_path: str, cm_dat_file_name: str, r2_dat_file: str, time_interval: float) -> list:
-    """Process a single directory_path and return a list of [N, tau_R] or None if files do not exist."""
+    """Process a single mc_directory_path and return a list of [N, tau_R] or None if files do not exist."""
     cm_dat_path = os.path.join(directory_path, cm_dat_file_name)
     r2_dat_path = os.path.join(directory_path, r2_dat_file)
     if os.path.isfile(cm_dat_path) and os.path.isfile(r2_dat_path):

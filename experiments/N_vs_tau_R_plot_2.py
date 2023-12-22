@@ -67,7 +67,7 @@ def extract_values(input_string: str) -> tuple[int, int, int, int]:
             raise ValueError("Input string does not match required format.")
         #end-of-if-else
     except ValueError as e:
-        print(f"Error with directory_path {input_string}: {str(e)}")
+        print(f"Error with mc_directory_path {input_string}: {str(e)}")
     #end-of-try-except
 #end-of-function
 
@@ -91,7 +91,7 @@ def get_directories(dir_path: str, pattern: str='run*_inner*_outer*_factor*_res*
     return glob.glob(os.path.join(dir_path, pattern))
 
 def write_image_to_directory(img: io.BytesIO, directory: str, filename: str) -> None:
-    """Write image data to a file in the specified directory_path."""
+    """Write image data to a file in the specified mc_directory_path."""
     os.makedirs(directory, exist_ok=True)
     filepath = os.path.join(directory, filename)
     with open(filepath, 'wb') as f:

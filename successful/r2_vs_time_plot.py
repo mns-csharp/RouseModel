@@ -22,7 +22,7 @@ def autocorrelation(data, tau):
 
 def main():
     # Assuming you have already loaded your R values
-    data = np.loadtxt("experiments/r2.dat")
+    data = np.loadtxt("../experiments/r2.dat")
     # Sample data
     tau_values = range(1001)  # Range of tau values from 0 to 1000
 

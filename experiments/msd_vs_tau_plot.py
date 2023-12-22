@@ -21,7 +21,7 @@ PATTERN = r'run\d+_inner(\d+)_outer(\d+)_factor(\d+)_residue(\d+)'
 
 
 def current_date_to_dir_name() -> str:
-    """Convert the current date and time into a directory_path name."""
+    """Convert the current date and time into a mc_directory_path name."""
     now = datetime.datetime.now()
     dir_name = now.strftime('%Y-%m-%d_%H-%M-%S')  # Format the datetime object as a string
     return dir_name
@@ -84,7 +84,7 @@ def calculate_curvature(tau: np.ndarray, MSD: np.ndarray) -> np.ndarray:
 
 
 def write_image_to_directory(img: io.BytesIO, directory: str, filename: str) -> None:
-    """Write image data to a file in the specified directory_path."""
+    """Write image data to a file in the specified mc_directory_path."""
     os.makedirs(directory, exist_ok=True)
     filepath = os.path.join(directory, filename)
     with open(filepath, 'wb') as f:
@@ -113,14 +113,14 @@ def extract_values(input_string: str) -> tuple[int, int, int, int]:
             raise ValueError("Input string does not match required format.")
         #end-of-if-else
     except ValueError as e:
-        print(f"Error with directory_path {input_string}: {str(e)}")
+        print(f"Error with mc_directory_path {input_string}: {str(e)}")
     #end-of-try-except
 #end-of-function
 
 
 def write_curvature_to_textfile(directory: str, curvature_value: float, dest_path: str=DEST_PATH) -> None:
-    """Write headers to the curvature_values.txt file if it doesn't exist or is empty, then write directory_path name, fileName, and curvature value to a text file."""
-    # Create the directory_path if it doesn't exist
+    """Write headers to the curvature_values.txt file if it doesn't exist or is empty, then write mc_directory_path name, fileName, and curvature value to a text file."""
+    # Create the mc_directory_path if it doesn't exist
     os.makedirs(dest_path, exist_ok=True)
     text_file_path = os.path.join(dest_path, TEXT_FILE_NAME)
     # Write headers if the file doesn't exist or is empty
@@ -129,7 +129,7 @@ def write_curvature_to_textfile(directory: str, curvature_value: float, dest_pat
             f.write(HEADERS)
         #end-of-with
     #end-of-if
-    # Obtain directory_path name
+    # Obtain mc_directory_path name
     directory_name = os.path.basename(directory)
     inner, outer, factor, res = extract_values(directory_name)
     # Prepare the line to be written

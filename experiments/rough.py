@@ -74,8 +74,8 @@ def generate_msd_plots(source_dir, destination_dir,
                 plt.close()
 
 def main():
-    source_dir = r"C:\Users\pc\Documents\__protein design\SURPASS\Rouse Model\mc005"  # Add the path to your source directory_path
-    destination_dir = r"C:\Users\pc\Documents\__protein design\SURPASS\Rouse Model\mc005\msd~3"  # Add the path to your destination directory_path
+    source_dir = r"C:\Users\pc\Documents\__protein design\SURPASS\Rouse Model\mc005"  # Add the path to your source mc_directory_path
+    destination_dir = r"C:\Users\pc\Documents\__protein design\SURPASS\Rouse Model\mc005\msd~3"  # Add the path to your destination mc_directory_path
 
     conditions = {
         ## 'no_wrap': False,

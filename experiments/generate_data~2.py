@@ -10,11 +10,11 @@ def run_surpass(n_residues_range, inner_cycles_range, outer_cycles_range, cycle_
         for inner_cycles in inner_cycles_range:
             for outer_cycles in outer_cycles_range:
                 for cycle_factor in cycle_factor_range:
-                    # Create the output directory_path name
+                    # Create the output mc_directory_path name
                     dir_name = f'run{run_count}_inner{inner_cycles}_outer{outer_cycles}_factor{cycle_factor}_residue{n_residues}'
-                    # Create the directory_path if it doesn't exist
+                    # Create the mc_directory_path if it doesn't exist
                     os.makedirs(dir_name, exist_ok=True)
-                    # Change the working directory_path
+                    # Change the working mc_directory_path
                     os.chdir(dir_name)
 
                     # Form the Surpass command
@@ -30,7 +30,7 @@ def run_surpass(n_residues_range, inner_cycles_range, outer_cycles_range, cycle_
                     subprocess.run(cmd)
                     run_count = run_count + 1
 
-                    # Change back to the parent directory_path
+                    # Change back to the parent mc_directory_path
                     os.chdir('../..')
 
 # Call the function

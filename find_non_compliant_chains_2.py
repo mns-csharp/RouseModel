@@ -45,7 +45,7 @@ class R2:
         return None
 
     @staticmethod
-    def process_directories(directory_path, iterations=5):
+    def process_directories(directory_path):
         x_points = []
         y_points_all_iterations = {}
         dir_pattern = re.compile(r'run\d+_inner\d+_outer\d+_factor\d+_residue(?P<residue>\d+)', re.IGNORECASE)
@@ -56,20 +56,19 @@ class R2:
                 residue_value = float(match.group('residue'))
                 y_points_all_iterations[residue_value] = []
         # Perform calculations over multiple iterations
-        for iteration in range(iterations):
-            for subdirectory in os.listdir(directory_path):
-                match = dir_pattern.match(subdirectory)
-                if match:
-                    residue_value = float(match.group('residue'))
-                    file_path = os.path.join(directory_path, subdirectory, 'r2.dat')
-                    try:
-                        r2_values = R2.read_r2_values_from_file(file_path)
-                        autocorrelation_values = R2.calculate_autocorrelation(r2_values)
-                        intersection = R2.find_intersection_with_one_over_e(autocorrelation_values)
-                        if intersection is not None:
-                            y_points_all_iterations[residue_value].append(intersection)
-                    except Exception as ex:
-                        print(f"An exception occurred during iteration {iteration} for {subdirectory}: {ex}")
+        for subdirectory in os.listdir(directory_path):
+            match = dir_pattern.match(subdirectory)
+            if match:
+                residue_value = float(match.group('residue'))
+                file_path = os.path.join(directory_path, subdirectory, 'r2.dat')
+                try:
+                    r2_values = R2.read_r2_values_from_file(file_path)
+                    autocorrelation_values = R2.calculate_autocorrelation(r2_values)
+                    intersection = R2.find_intersection_with_one_over_e(autocorrelation_values)
+                    if intersection is not None:
+                        y_points_all_iterations[residue_value].append(intersection)
+                except Exception as ex:
+                    print(f"An exception occurred during iteration for {subdirectory}: {ex}")
         # Calculate mean and standard deviation for each residue
         y_points_mean = []
         y_points_stddev = []

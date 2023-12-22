@@ -85,12 +85,12 @@ def extract_values(input_string: str) -> tuple[int, int, int, int]:
             raise ValueError("Input string does not match required format.")
         #end-of-if-else
     except ValueError as e:
-        print(f"Error with directory_path {input_string}: {str(e)}")
+        print(f"Error with mc_directory_path {input_string}: {str(e)}")
     #end-of-try-except
 #end-of-function
 
 def write_image_to_directory(img: io.BytesIO, directory: str, filename: str) -> None:
-    """Write image data to a file in the specified directory_path."""
+    """Write image data to a file in the specified mc_directory_path."""
     os.makedirs(directory, exist_ok=True)
     filepath = os.path.join(directory, filename)
     with open(filepath, 'wb') as f:
@@ -99,7 +99,7 @@ def write_image_to_directory(img: io.BytesIO, directory: str, filename: str) -> 
 #end-of-function
 
 def process_directory(directory: str, dat_file: str, r2_dat_file: str, time_interval: float) -> list:
-    """Process a single directory_path and return a list of [N, tau_R] or None if files do not exist."""
+    """Process a single mc_directory_path and return a list of [N, tau_R] or None if files do not exist."""
     filename = os.path.join(directory, dat_file)
     r2_filename = os.path.join(directory, r2_dat_file)
     if os.path.isfile(filename) and os.path.isfile(r2_filename):
