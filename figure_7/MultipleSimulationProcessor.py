@@ -1,50 +1,48 @@
 import os
 import re
-
+from SingleSimulationProcessor import SingleSimulationProcessor
 from LineChartAggregator import LineChartAggregator
-from SimulationProcessor import SimulationProcessor
 
 class MultipleSimulationProcessor:
     def __init__(self, root_directory):
-        self.root_directory = root_directory
-        self.all_intersection_data = []
+        self._root_directory = root_directory
+        self.x_list = None
+        self.y_lists = None
+        self.mean_list = None
+        self.stddev_list = None
 
     def process_all_simulations(self):
-        # Compile the regular expression pattern for matching directory names
         dir_pattern = re.compile(r'^mc\d{3}$')
 
-        # Iterate over all items in the root directory
-        for item in os.listdir(self.root_directory):
-            # Full path of the item
-            item_path = os.path.join(self.root_directory, item)
-            # Check if the item is a directory and matches the pattern
-            if os.path.isdir(item_path) and dir_pattern.match(item):
-                # Initialize a SimulationProcessor for the current directory
-                print(f'Now processing simulation {item_path}')
-                sim_processor = SimulationProcessor(item_path)
-                # Process simulations in the current directory
-                sim_processor.process_simulations()
-                # Collect all intersection data
-                self.all_intersection_data.extend(sim_processor.get_intersection_data())
+        agg = LineChartAggregator()
 
-    def get_all_intersection_data(self):
-        # Return the collected all intersection data
-        return self.all_intersection_data
+        directories = [os.path.join(self._root_directory, d) for d in os.listdir(self._root_directory)
+                       if os.path.isdir(os.path.join(self._root_directory, d))]
 
-if __name__ == '__main__':
-    # root_dir = r'C:\git\rouse_data'
-    root_dir = r'/home/mohammad/rouse_data'
-    multi_sim_processor = MultipleSimulationProcessor(root_dir)
-    multi_sim_processor.process_all_simulations()
-    all_intersection_data = multi_sim_processor.get_all_intersection_data()
+        for item in directories:
+            if dir_pattern.match(os.path.basename(item)):
+                print(f"Now processing simulation {item}")
+                sim_processor = SingleSimulationProcessor(item)
 
-    # Initialize the LineChartAggregator
-    chart_aggregator = LineChartAggregator()
+                x_list = sim_processor.residue_lengths
+                y_list = sim_processor.rouse_relaxation
 
-    # Add each simulation's intersection data to the aggregator
-    for x_inter, y_inter in all_intersection_data:
-        # Assuming x_inter and y_inter are numpy arrays of the same length
-        chart_aggregator.add_data(x_inter, y_inter)
+                if x_list is not None and y_list is not None:
+                    if len(x_list) != 0 and len(y_list) != 0:
+                        if len(x_list) == len(y_list):
+                            agg.add_data(x_list, y_list)
 
-    # Draw the aggregate plot
-    chart_aggregator.plot('multiple_simulation_plot')
+        agg.process_data()
+
+        self.x_list = agg.get_x_common()
+        self.y_lists = agg.get_y_interpolations()
+        self.mean_list = agg.calculate_mean()
+        self.stddev_list = agg.calculate_std_dev()
+
+# Example usage:
+# multiple_processor = MultipleSimulationProcessor('/path/to/multiple/simulations')
+# multiple_processor.process_all_simulations()
+# print(multiple_processor.x_list)
+# print(multiple_processor.y_lists)
+# print(multiple_processor.mean_list)
+# print(multiple_processor.stddev_list)

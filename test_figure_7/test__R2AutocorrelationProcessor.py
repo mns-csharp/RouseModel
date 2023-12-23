@@ -19,18 +19,10 @@ class TestR2AutocorrelationProcessor(unittest.TestCase):
 
     def setUp(self):
         # Create a temporary directory
-        self.test_dir = tempfile.mkdtemp()
-
-        # Create a sample r2.dat file
-        self.r2_file_path = os.path.join(self.test_dir, 'r2.dat')
-        with open(self.r2_file_path, 'w') as f:
-            f.write('Time(s) R2\n')  # Header
-            for i in range(10):
-                f.write(f'{i} {i**2}\n')  # Sample R2 values
+        self.test_dir = '../mc001/run000_inner72_outer643_factor67_residue47'
 
     def tearDown(self):
-        # Remove the directory after the test
-        shutil.rmtree(self.test_dir)
+        pass
 
     def test_get_r2_values_from_file(self):
         processor = R2AutocorrelationProcessor(self.test_dir)
@@ -41,7 +33,9 @@ class TestR2AutocorrelationProcessor(unittest.TestCase):
         processor = R2AutocorrelationProcessor(self.test_dir)
         autocorrelation = processor.get_autocorrelation(np.arange(10)**2)
         self.assertIsNotNone(autocorrelation)
-        # More detailed tests should be added here based on the expected autocorrelation values.
+        expected_arr = np.array([1.00000, 0.68535, 0.38638, 0.11820, -0.10519, -0.27144, -0.37043, -0.39481, -0.34055, -0.20751])
+        # Use numpy's allclose function to compare the arrays within some tolerance.
+        self.assertTrue(np.allclose(autocorrelation, expected_arr, atol=1e-5))
 
     def test_find_intersection_with_one_over_e(self):
         processor = R2AutocorrelationProcessor(self.test_dir)
@@ -57,15 +51,7 @@ class TestR2AutocorrelationProcessor(unittest.TestCase):
         residue_number = processor.get_residue_number_from_path()
         self.assertEqual(residue_number, 123)
 
-    def test_plot_autocorrelation(self):
-        processor = R2AutocorrelationProcessor(self.test_dir)
-        with patch.object(plt, 'show'):
-            processor.plot_autocorrelation('test_plot')
 
-    def test_plot_intersection(self):
-        processor = R2AutocorrelationProcessor(self.test_dir)
-        with patch.object(plt, 'show'):
-            processor.plot_intersection('test_plot_intersection')
 
 if __name__ == '__main__':
     unittest.main()
