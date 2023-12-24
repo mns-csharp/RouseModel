@@ -13,13 +13,15 @@ class Main:
         try:
             self.processor.process_all_simulations()
 
+            y_list_of_lists = []
+
             x_values = self.processor.x_list
-            y_list_of_lists = self.processor.y_lists
+            # y_list_of_lists = self.processor.y_lists
             mean_y_list = self.processor.mean_list
-            std_dev = self.processor.stddev_list
+            std_dev_y_list = self.processor.stddev_list
 
             y_list_of_lists.append(mean_y_list)
-            y_list_of_lists.append(std_dev)
+            y_list_of_lists.append(std_dev_y_list)
 
             # Set the titles and axis labels
             plt.title("Multiple Line Graphs Example")

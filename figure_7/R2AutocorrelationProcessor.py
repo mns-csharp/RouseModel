@@ -17,7 +17,8 @@ class R2AutocorrelationProcessor:
             raise FileNotFoundError(f"The file {file_path} was not found.")
 
         with open(file_path, 'r') as file:
-            r2_values = np.array([float(line.strip()) for line in file.readlines()[1:]])
+            # Skip the first line, iterate through the rest, and filter out any lines that are whitespace
+            r2_values = np.array([float(line.strip()) for line in file.readlines()[1:] if line.strip()])
         return r2_values
 
     def calculate_autocorrelation(self, data):
@@ -45,9 +46,3 @@ class R2AutocorrelationProcessor:
         else:
             raise ValueError("Residue number not found in directory path.")
 
-# Example usage:
-# processor = R2AutocorrelationProcessor('/path/to/directory')
-# print(processor.r2_values)
-# print(processor.auto_correlation)
-# print(processor.intersection)
-# print(processor.residue_length)
