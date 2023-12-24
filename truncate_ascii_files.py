@@ -13,12 +13,11 @@ def is_ascii(file_path):
         # For other exceptions, we'll assume it's not an ASCII text file
         return False
 
-def truncate_file_to_21_lines(file_path):
+def truncate_lines(file_path):
     with open(file_path, 'r', encoding='ascii', errors='ignore') as file:
         lines = file.readlines()
-
     with open(file_path, 'w', encoding='ascii') as file:
-        file.writelines(lines[:21])
+        file.writelines(lines[:102])
 
 def scan_and_truncate_files(directory):
     for root, dirs, files in os.walk(directory):
@@ -26,7 +25,7 @@ def scan_and_truncate_files(directory):
             file_path = os.path.join(root, file)
             if is_ascii(file_path):
                 try:
-                    truncate_file_to_21_lines(file_path)
+                    truncate_lines(file_path)
                     print(f"Processed file: {file_path}")
                 except Exception as e:
                     print(f"Failed to process file: {file_path}. Error: {e}")
