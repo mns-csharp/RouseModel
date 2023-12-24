@@ -50,7 +50,8 @@ class Main:
 
 
 def main():
-    processor = MultipleSimulationProcessor(r'C:\git\rouse_data')
+    # processor = MultipleSimulationProcessor(r'C:\git\rouse_data')
+    processor = MultipleSimulationProcessor(r'/home/mohammad/rouse_data')
     form = Main(processor)
     form.draw_aggregate_chart()
 
