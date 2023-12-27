@@ -17,6 +17,7 @@ class Main:
             self.processor.process_all_simulations()
 
             x_values = self.processor.x_list
+            y_values = self.processor.y_lists
             mean_y_list = self.processor.mean_list
             std_dev_y_list = self.processor.stddev_list
 
@@ -50,7 +51,7 @@ class Main:
 
 
 def main():
-    processor = MultipleSimulationProcessor(r'C:\git\rouse_data')
+    processor = MultipleSimulationProcessor(r'C:\git\rouse_data~~')
     # processor = MultipleSimulationProcessor(r'/home/mohammad/rouse_data')
     form = Main(processor)
     form.draw_aggregate_chart()

@@ -2,6 +2,7 @@ import numpy as np
 import os
 import re
 
+
 class R2AutocorrelationProcessor:
     def __init__(self, dir_path):
         self.dir_path = dir_path
@@ -16,23 +17,27 @@ class R2AutocorrelationProcessor:
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"The file {file_path} was not found.")
 
-        with open(file_path, 'r') as file:
+        with open(file_path, "r") as file:
             # Skip the first line, iterate through the rest, and filter out any lines that are whitespace
-            r2_values = np.array([float(line.strip()) for line in file.readlines()[1:] if line.strip()])
+            r2_values = np.array(
+                [float(line.strip()) for line in file.readlines()[1:] if line.strip()]
+            )
         return r2_values
 
     def calculate_autocorrelation(self, data):
         n = len(data)
         mean = np.mean(data)
         variance = np.var(data, ddof=0)
-        autocorr = np.correlate(data - mean, data - mean, mode='full')[n-1:] / (variance * np.arange(n, 0, -1))
+        autocorr = np.correlate(data - mean, data - mean, mode="full")[n - 1 :] / (
+            variance * np.arange(n, 0, -1)
+        )
         return autocorr
 
     def find_intersection_with_one_over_e(self):
         one_over_e = 1 / np.e
         for i in range(len(self.auto_correlation) - 1):
             if self.auto_correlation[i] >= one_over_e > self.auto_correlation[i + 1]:
-                slope = (self.auto_correlation[i + 1] - self.auto_correlation[i])
+                slope = self.auto_correlation[i + 1] - self.auto_correlation[i]
                 if abs(slope) < 1e-9:  # Prevent division by zero
                     return i
                 intersection = i + (one_over_e - self.auto_correlation[i]) / slope
@@ -40,9 +45,8 @@ class R2AutocorrelationProcessor:
         return None
 
     def get_residue_count(self):
-        match = re.search(r'residue(\d+)', self.dir_path)
+        match = re.search(r"residue(\d+)", self.dir_path)
         if match:
             return int(match.group(1))
         else:
             raise ValueError("Residue number not found in directory path.")
-
