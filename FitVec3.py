@@ -1,84 +1,44 @@
 import numpy as np
-from concurrent.futures import ThreadPoolExecutor
-import numpy as np
 import os
-import numpy as np
 from scipy.optimize import curve_fit
 import matplotlib
-matplotlib.use('Agg')  # Use the 'Agg' backend, which is non-interactive and does not require Qt
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-
-
-import numpy as np
+from scipy.optimize import OptimizeWarning
+import warnings
 
 def save_one_list(lags, file_name):
-    """
-    Saves the lags and autocorrelation values to a text file.
-    
-    :param lags: List of lag values
-    :param autocorrelation_values: List of autocorrelation values
-    :param file_name: Name of the file to save the data to
-    """
-    # Convert the lags and autocorrelation_values to a NumPy array
     data_to_save = np.column_stack((lags))
-
-    # Save the array to a text file
     np.savetxt(file_name, data_to_save, fmt='%f', comments='')
 
 def save_two_lists(lags, autocorrelation_values, file_name):
-    """
-    Saves the lags and autocorrelation values to a text file.
-    
-    :param lags: List of lag values
-    :param autocorrelation_values: List of autocorrelation values
-    :param file_name: Name of the file to save the data to
-    """
-    # Convert the lags and autocorrelation_values to a NumPy array
     data_to_save = np.column_stack((lags, autocorrelation_values))
-
-    # Save the array to a text file
     np.savetxt(file_name, data_to_save, fmt='%f', comments='')
 
 
 def save_fit(list1, list2, list3, file_name):
-    # Combine list1 and list2 into two columns and save
     data_to_save = np.column_stack((list3))
     np.savetxt(file_name, data_to_save, fmt='%f', comments='')
-    # Save list3 in a new line or as a new column, depending on your needs
-    # This example code appends, assuming list3 is of the same length as list1 and list2
     with open(file_name, 'ab') as f:  # 'ab' mode for binary append
         np.savetxt(f, np.column_stack((list1, list2)), fmt='%f')
 
-
-
-# Example usage:
-# save_two_lists(autocorr1Lags, autocorr1values, 'autocorr1.txt')
-
 def parse_vec3(line):
     try:
-        # Assuming the line is in the format "x y z" with space-separated values
-        parts = line.strip().split()
-        return np.array([float(parts[0]), float(parts[1]), float(parts[2])])
-    except (ValueError, IndexError):
-        # The line didn't have the right number of parts or wasn't able to be converted to floats
+        return np.fromiter(line.strip().split(), dtype=float)
+    except ValueError:
         return None
 
 def read_vec3(dir_path, file_name):
     file_path = os.path.join(dir_path, file_name)
-    vec3_list = []
-
     with open(file_path, 'r') as file:
-        for line in file:
-            if line.strip():  # skip empty lines
-                vec3 = parse_vec3(line)
-                if vec3 is not None:
-                    vec3_list.append(vec3)
-
+        vec3_list = [parse_vec3(line) for line in file if line.strip() and parse_vec3(line) is not None]
     return np.array(vec3_list)
 
-# Example usage:
-# vec3_array = read_vec3('path_to_directory', 'filename.txt')
-
+def autocorrelation_function(vectors, t):
+    N = vectors.shape[0] - t
+    mean = np.mean(vectors[:N], axis=0)
+    C_t = np.sum((vectors[:N] - mean) * (vectors[t:N+t] - mean), axis=0)
+    return np.sum(C_t)
 
 def autocorrelation_vec3(data, threshold_min=0.0001, threshold_max=0.9999, num_lag=1000):
     print("length of data", len(data))
@@ -108,18 +68,42 @@ def autocorrelation_vec3(data, threshold_min=0.0001, threshold_max=0.9999, num_l
     lags, autocorrelation_values = zip(*sorted_results) if sorted_results else ([], [])
     return list(lags), list(autocorrelation_values)
 
-from scipy.optimize import OptimizeWarning
-import warnings
+def autocorrelation_list_normalized(vectors, max_lag=1000, threshold=None):
+    if not isinstance(vectors, np.ndarray) or vectors.ndim != 2:
+        raise ValueError("Input 'vectors' must be a 2D NumPy array.")
+    n_vectors, vector_length = vectors.shape
+    # Pre-compute mean and normalization factor
+    mean_vectors = np.mean(vectors, axis=0)
+    vectors_centered = vectors - mean_vectors
+    norm_factor = np.sum(vectors_centered ** 2)  # Summing over all elements to get a scalar
+    # Initialize autocorrelation array
+    autocorrelations = np.zeros(max_lag)
+    # Compute autocorrelation for each lag
+    for tau in range(max_lag):
+        # Avoid computing the autocorrelation beyond the number of vectors
+        if tau >= n_vectors:
+            break
+        product = np.sum(vectors_centered[:-tau if tau > 0 else None] * vectors_centered[tau:], axis=0)
+        autocorrelations[tau] = np.sum(product)
+    # Normalize the autocorrelation values
+    autocorrelations /= norm_factor  # Now this is a scalar division
+    # Apply threshold if given
+    if threshold is not None:
+        mask = autocorrelations >= threshold
+        lags = np.arange(max_lag)[mask]
+        autocorrelations = autocorrelations[mask]
+    else:
+        lags = np.arange(max_lag)
+    return lags, autocorrelations
 
 def fit(x_data, y_data):
+    print("x_data len in fit() :", len(x_data))
+    print("y_data len in fit() :", len(y_data))
     def model(x, a, b):
         return a * np.exp((-1)*b * x)
     x_data = np.array(x_data)
     y_data = np.array(y_data)
-    initial_guess = [1.0, 0.1]
-    print("x_data len in fit() :", len(x_data))
-    print("y_data len in fit() :", len(y_data))
-    
+    initial_guess = [0.0, 0.0]
     try:
         with warnings.catch_warnings():
             warnings.simplefilter('error', OptimizeWarning)
@@ -131,18 +115,19 @@ def fit(x_data, y_data):
     except RuntimeError as e:
         print("Error occurred during curve fitting:", e)
         return x_data, [], initial_guess
-
     y_fit = model(x_data, *params)
     minimizing_point = params
-    return x_data, y_fit.tolist(), minimizing_point.tolist()
+    return (x_data, np.array(y_fit), np.array(minimizing_point))
 
 
-root_dir = r"/home/mohammad/bioshell_v4/BioShell/target/release/Sikorski_Figure_7/20240124_174800/" #r"C:\git\rouse_data~~\20240124_174800---"
+root_dir = r"/home/mohammad/bioshell_v4/BioShell/target/release/Sikorski_Figure_7/20240115_053051/"
+#r"/home/mohammad/bioshell_v4/BioShell/target/release/Sikorski_Figure_7/20240124_174800/" 
+##r"C:\git\rouse_data~~\20240124_174800---"
 r_end_vec = "r_end_vec.dat"
 
-dir1 = os.path.join(root_dir, "run00_inner100000_outer100_factor1_residue50")
-dir2 = os.path.join(root_dir, "run01_inner100000_outer100_factor1_residue100")
-dir3 = os.path.join(root_dir, "run02_inner100000_outer100_factor1_residue150")
+dir1 = os.path.join(root_dir, "run03_inner1000_outer1000_factor10_residue132")
+dir2 = os.path.join(root_dir, "run10_inner1000_outer1000_factor10_residue416")
+dir3 = os.path.join(root_dir, "run17_inner1000_outer1000_factor10_residue701")
 
 chain1Vec3List = read_vec3(dir_path=dir1, file_name=r_end_vec)
 chain2Vec3List = read_vec3(dir_path=dir2, file_name=r_end_vec)
