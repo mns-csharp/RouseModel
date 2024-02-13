@@ -57,58 +57,40 @@ def fit(x_data: List[int], y_data: List[float]) -> Tuple[np.ndarray, np.ndarray,
     minimizing_point = params
     return (x_data, np.array(y_fit), np.array(minimizing_point))
 
-def autocorrelation_list_normalized__1(vectors: np.ndarray, max_lag: int = 1000, threshold: Optional[float] = None) -> Tuple[np.ndarray, np.ndarray]:
-    n = len(vectors)
-    autocorrelations = np.zeros(max_lag)
-    # Calculate denominator (sum of the norms squared)
-    denominator = np.sum(np.linalg.norm(vectors, axis=1) ** 2)
-    # Calculate autocorrelation for each lag
-    for t in range(max_lag):
-        numerator = 0
-        for i in range(n - t):
-            numerator += np.dot(vectors[i], vectors[i + t])
-        autocorrelations[t] = numerator / denominator
-        print(f"lag={t}, autocorr={autocorrelations[t]}")
-        # If a threshold is provided, stop when the first autocorrelation coefficient below it is encountered
-        if threshold is not None and autocorrelations[t] < threshold:
-            return autocorrelations[:t], np.arange(t)
-    return np.arange(max_lag), autocorrelations
+import numpy as np
+from typing import Optional, Tuple
 
-def autocorrelation_list_normalized__2(vectors: np.ndarray, max_lag: int = 1000, threshold: Optional[float] = None) -> Tuple[np.ndarray, np.ndarray]:
+def C(vectors: np.ndarray, t: int) -> float:
     n = len(vectors)
-    autocorrelations = np.zeros(max_lag)
-    # Calculate denominator (sum of the norms squared)
-    denominator = np.sum(np.linalg.norm(vectors, axis=1) ** 2)
-    # Calculate autocorrelation for each lag using vectorized operations
-    for t in range(max_lag):
-        numerator = np.sum(vectors[:n-t] * vectors[t:n], axis=0)
-        autocorrelations[t] = np.sum(numerator) / denominator
-        print(f"lag={t}, autocorr={autocorrelations[t]}")
-        # If a threshold is provided, stop when the first autocorrelation coefficient below it is encountered
-        if threshold is not None and autocorrelations[t] < threshold:
-            return autocorrelations[:t], np.arange(t)
-    return np.arange(max_lag), autocorrelations
+    if t >= n or t < 0:
+        raise ValueError("Invalid value for t. It must be between 0 and n-1.")
+    sum = 0.0
+    for i in range(n - t):
+        sum += np.dot(vectors[i], vectors[i + t])
+    return sum / (n - t)
 
-def autocorrelation_function(vectors: np.ndarray, t: int) -> float:
-    N = vectors.shape[0] - t
-    C_t = np.sum((vectors[:N]) * (vectors[t:N+t]), axis=0)
-    return np.sum(C_t)
+def ComputeCForRange(vectors: np.ndarray, max_lag: int = 1000, threshold: Optional[float] = None) -> Tuple[np.ndarray, np.ndarray]:
+    c0 = C(vectors, 0)  # This is the normalization factor
+    print(f"Normalization factor: {c0}")
+    lags = np.arange(max_lag + 1)
+    autocorrelations = []
+    for lag in lags:
+        c_value = C(vectors, lag)
+        normalized_autocorr = c_value / c0
+        print(f"Lag={lag}, Raw Autocorr={c_value}, Normalized Autocorr={normalized_autocorr}")
+        autocorrelations.append(normalized_autocorr)
+        # If a threshold is set and the normalized autocorrelation falls below it, stop the computation
+        if threshold is not None and normalized_autocorr < threshold:
+            break
+    # Convert the list of autocorrelations to a numpy array
+    autocorrelations_array = np.array(autocorrelations)
+    # The lags array may need to be truncated if a threshold was used
+    lags_array = lags[:len(autocorrelations_array)]
+    return lags_array, autocorrelations_array
 
-def autocorrelation_list_normalized(vectors: np.ndarray, max_lag: int = 1000, threshold: Optional[float] = None) -> Tuple[np.ndarray, np.ndarray]:
-    n = len(vectors)
-    autocorrelations = np.zeros(max_lag)
-    # Calculate denominator (sum of the norms squared)
-    denominator = np.sum(np.linalg.norm(vectors, axis=1) ** 2)
-    # Calculate autocorrelation for each lag using vectorized operations
-    for t in range(max_lag):
-        N = n - t  # Number of observations for each lag time
-        numerator = np.sum(vectors[:N] * vectors[t:N+t], axis=0)
-        autocorrelations[t] = np.sum(numerator) / (denominator / N)  # Normalize by N
-        print(f"lag={t}, autocorr={autocorrelations[t]}, raw value={np.sum(numerator)}")
-        # If a threshold is provided, stop when the first autocorrelation coefficient below it is encountered
-        if threshold is not None and autocorrelations[t] < threshold:
-            return autocorrelations[:t], np.arange(t)
-    return np.arange(max_lag), autocorrelations
+#if __name__ == "__main__":
+#    chain1Vec3List = np.array([[1.0,1.0,1.0],[2.0,2.0,2.0],[3.0,3.0,3.0],[4.0,4.0,4.0]])
+#    ComputeCForRange(chain1Vec3List, 4)
 
 if __name__ == "__main__":
     root_dir = r'/home/mohammad/bioshell_v4/BioShell/target/release/Sikorski_Figure_7/20240124_174800'
@@ -130,17 +112,16 @@ if __name__ == "__main__":
     print(f'Reading done : {dir3}\{r_end_vec}')
 
     print('Autocorr computation started')
-    autocorr1Lags, autocorr1values = autocorrelation_list_normalized(chain1Vec3List)
+    autocorr1Lags, autocorr1values = ComputeCForRange(chain1Vec3List)
     print(f'Autocorr computation done for : {dir1}\{r_end_vec}')
-    autocorr2Lags, autocorr2values = autocorrelation_list_normalized(chain2Vec3List)
+    autocorr2Lags, autocorr2values = ComputeCForRange(chain2Vec3List)
     print(f'Autocorr computation done for : {dir2}\{r_end_vec}')
-    autocorr3Lags, autocorr3values = autocorrelation_list_normalized(chain3Vec3List)
+    autocorr3Lags, autocorr3values = ComputeCForRange(chain3Vec3List)
     print(f'Autocorr computation done for : {dir3}\{r_end_vec}')
 
-
-    save_two_lists(autocorr1Lags, autocorr1values, "autocorr1.txt")
-    save_two_lists(autocorr2Lags, autocorr2values, "autocorr2.txt")
-    save_two_lists(autocorr3Lags, autocorr3values, "autocorr3.txt")
+    save_two_lists(autocorr1Lags.tolist(), autocorr1values.tolist(), "autocorr1.txt")
+    save_two_lists(autocorr2Lags.tolist(), autocorr2values.tolist(), "autocorr2.txt")
+    save_two_lists(autocorr3Lags.tolist(), autocorr3values.tolist(), "autocorr3.txt")
 
     print('Fitting started')
     x_dataList1, y_fitList1, minimizing_pointList1 = fit(autocorr1Lags, autocorr1values)
@@ -198,15 +179,3 @@ if __name__ == "__main__":
 
     # Save the plot with a logarithmic scale
     plt.savefig('log_plot.png', dpi=300)
-
-
-
-
-
-
-
-
-
-
-
-
