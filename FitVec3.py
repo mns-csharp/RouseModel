@@ -57,11 +57,6 @@ def fit(x_data: List[int], y_data: List[float]) -> Tuple[np.ndarray, np.ndarray,
     minimizing_point = params
     return (x_data, np.array(y_fit), np.array(minimizing_point))
 
-def autocorrelation_function(vectors: np.ndarray, t: int) -> float:
-    N = vectors.shape[0] - t
-    C_t = np.sum((vectors[:N]) * (vectors[t:N+t]), axis=0)
-    return np.sum(C_t)
-
 def autocorrelation_list_normalized__1(vectors: np.ndarray, max_lag: int = 1000, threshold: Optional[float] = None) -> Tuple[np.ndarray, np.ndarray]:
     n = len(vectors)
     autocorrelations = np.zeros(max_lag)
@@ -79,7 +74,7 @@ def autocorrelation_list_normalized__1(vectors: np.ndarray, max_lag: int = 1000,
             return autocorrelations[:t], np.arange(t)
     return np.arange(max_lag), autocorrelations
 
-def autocorrelation_list_normalized(vectors: np.ndarray, max_lag: int = 1000, threshold: Optional[float] = None) -> Tuple[np.ndarray, np.ndarray]:
+def autocorrelation_list_normalized__2(vectors: np.ndarray, max_lag: int = 1000, threshold: Optional[float] = None) -> Tuple[np.ndarray, np.ndarray]:
     n = len(vectors)
     autocorrelations = np.zeros(max_lag)
     # Calculate denominator (sum of the norms squared)
@@ -89,6 +84,27 @@ def autocorrelation_list_normalized(vectors: np.ndarray, max_lag: int = 1000, th
         numerator = np.sum(vectors[:n-t] * vectors[t:n], axis=0)
         autocorrelations[t] = np.sum(numerator) / denominator
         print(f"lag={t}, autocorr={autocorrelations[t]}")
+        # If a threshold is provided, stop when the first autocorrelation coefficient below it is encountered
+        if threshold is not None and autocorrelations[t] < threshold:
+            return autocorrelations[:t], np.arange(t)
+    return np.arange(max_lag), autocorrelations
+
+def autocorrelation_function(vectors: np.ndarray, t: int) -> float:
+    N = vectors.shape[0] - t
+    C_t = np.sum((vectors[:N]) * (vectors[t:N+t]), axis=0)
+    return np.sum(C_t)
+
+def autocorrelation_list_normalized(vectors: np.ndarray, max_lag: int = 1000, threshold: Optional[float] = None) -> Tuple[np.ndarray, np.ndarray]:
+    n = len(vectors)
+    autocorrelations = np.zeros(max_lag)
+    # Calculate denominator (sum of the norms squared)
+    denominator = np.sum(np.linalg.norm(vectors, axis=1) ** 2)
+    # Calculate autocorrelation for each lag using vectorized operations
+    for t in range(max_lag):
+        N = n - t  # Number of observations for each lag time
+        numerator = np.sum(vectors[:N] * vectors[t:N+t], axis=0)
+        autocorrelations[t] = np.sum(numerator) / (denominator / N)  # Normalize by N
+        print(f"lag={t}, autocorr={autocorrelations[t]}, raw value={np.sum(numerator)}")
         # If a threshold is provided, stop when the first autocorrelation coefficient below it is encountered
         if threshold is not None and autocorrelations[t] < threshold:
             return autocorrelations[:t], np.arange(t)
