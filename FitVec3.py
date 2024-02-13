@@ -58,46 +58,45 @@ def fit(x_data: List[int], y_data: List[float]) -> Tuple[np.ndarray, np.ndarray,
     return (x_data, np.array(y_fit), np.array(minimizing_point))
 
 def autocorrelation_function(vectors: np.ndarray, t: int) -> float:
-    # N is the number of vectors minus the lag 't'. This determines how many terms
-    # will be included in the autocorrelation calculation: you can't use vectors
-    # beyond the end of the dataset, so you stop 't' terms early.
     N = vectors.shape[0] - t
-    # Compute C_t, the autocorrelation for lag 't'. This is done by element-wise
-    # multiplication of the first N vectors with the vectors from t to N+t.
-    # The mean is not subtracted from the vectors because it's assumed to be already
-    # centered (mean subtracted) before this function is called.
     C_t = np.sum((vectors[:N]) * (vectors[t:N+t]), axis=0)
-    # Sum all the elements of C_t to get a single autocorrelation value for lag 't'.
-    # This collapses the result to a scalar, which is the sum of autocorrelations
-    # for all individual elements/dimensions of the vectors.
     return np.sum(C_t)
 
-import numpy as np
-from typing import Optional, Tuple
-
-def autocorrelation_list_normalized(vectors: np.ndarray, max_lag: int = 1000, threshold: Optional[float] = None) -> Tuple[np.ndarray, np.ndarray]:
+def autocorrelation_list_normalized__1(vectors: np.ndarray, max_lag: int = 1000, threshold: Optional[float] = None) -> Tuple[np.ndarray, np.ndarray]:
     n = len(vectors)
     autocorrelations = np.zeros(max_lag)
-
     # Calculate denominator (sum of the norms squared)
     denominator = np.sum(np.linalg.norm(vectors, axis=1) ** 2)
-
     # Calculate autocorrelation for each lag
     for t in range(max_lag):
         numerator = 0
         for i in range(n - t):
             numerator += np.dot(vectors[i], vectors[i + t])
-
         autocorrelations[t] = numerator / denominator
-
+        print(f"lag={t}, autocorr={autocorrelations[t]}")
         # If a threshold is provided, stop when the first autocorrelation coefficient below it is encountered
         if threshold is not None and autocorrelations[t] < threshold:
             return autocorrelations[:t], np.arange(t)
+    return np.arange(max_lag), autocorrelations
 
-    return autocorrelations, np.arange(max_lag)
+def autocorrelation_list_normalized(vectors: np.ndarray, max_lag: int = 1000, threshold: Optional[float] = None) -> Tuple[np.ndarray, np.ndarray]:
+    n = len(vectors)
+    autocorrelations = np.zeros(max_lag)
+    # Calculate denominator (sum of the norms squared)
+    denominator = np.sum(np.linalg.norm(vectors, axis=1) ** 2)
+    # Calculate autocorrelation for each lag using vectorized operations
+    for t in range(max_lag):
+        numerator = np.sum(vectors[:n-t] * vectors[t:n], axis=0)
+        autocorrelations[t] = np.sum(numerator) / denominator
+        print(f"lag={t}, autocorr={autocorrelations[t]}")
+        # If a threshold is provided, stop when the first autocorrelation coefficient below it is encountered
+        if threshold is not None and autocorrelations[t] < threshold:
+            return autocorrelations[:t], np.arange(t)
+    return np.arange(max_lag), autocorrelations
 
 if __name__ == "__main__":
-    root_dir = r"C:\git\rouse_data~~\20240124_174800---" #r"/home/mohammad/bioshell_v4/BioShell/target/release/Sikorski_Figure_7/20240115_053051/"
+    root_dir = r'/home/mohammad/bioshell_v4/BioShell/target/release/Sikorski_Figure_7/20240124_174800'
+    #r"C:\git\rouse_data~~\20240124_174800---" #r"/home/mohammad/bioshell_v4/BioShell/target/release/Sikorski_Figure_7/20240115_053051/"
     #r"/home/mohammad/bioshell_v4/BioShell/target/release/Sikorski_Figure_7/20240124_174800/"
 
     r_end_vec = "r_end_vec.dat"
@@ -106,23 +105,34 @@ if __name__ == "__main__":
     dir2 = os.path.join(root_dir, "run01_inner100000_outer100_factor1_residue100")
     dir3 = os.path.join(root_dir, "run02_inner100000_outer100_factor1_residue150")
 
+    print('data reading started')
     chain1Vec3List = read_vec3(dir_path=dir1, file_name=r_end_vec)
+    print(f'Reading done : {dir1}\{r_end_vec}')
     chain2Vec3List = read_vec3(dir_path=dir2, file_name=r_end_vec)
+    print(f'Reading done : {dir2}\{r_end_vec}')
     chain3Vec3List = read_vec3(dir_path=dir3, file_name=r_end_vec)
+    print(f'Reading done : {dir3}\{r_end_vec}')
 
-
+    print('Autocorr computation started')
     autocorr1Lags, autocorr1values = autocorrelation_list_normalized(chain1Vec3List)
+    print(f'Autocorr computation done for : {dir1}\{r_end_vec}')
     autocorr2Lags, autocorr2values = autocorrelation_list_normalized(chain2Vec3List)
+    print(f'Autocorr computation done for : {dir2}\{r_end_vec}')
     autocorr3Lags, autocorr3values = autocorrelation_list_normalized(chain3Vec3List)
+    print(f'Autocorr computation done for : {dir3}\{r_end_vec}')
+
 
     save_two_lists(autocorr1Lags, autocorr1values, "autocorr1.txt")
     save_two_lists(autocorr2Lags, autocorr2values, "autocorr2.txt")
     save_two_lists(autocorr3Lags, autocorr3values, "autocorr3.txt")
 
-
+    print('Fitting started')
     x_dataList1, y_fitList1, minimizing_pointList1 = fit(autocorr1Lags, autocorr1values)
+    print(f'Autocorr computation done for : {dir1}\{r_end_vec}')
     x_dataList2, y_fitList2, minimizing_pointList2 = fit(autocorr2Lags, autocorr2values)
+    print(f'Autocorr computation done for : {dir2}\{r_end_vec}')
     x_dataList3, y_fitList3, minimizing_pointList3 = fit(autocorr3Lags, autocorr3values)
+    print(f'Autocorr computation done for : {dir3}\{r_end_vec}')
 
     save_one_list(minimizing_pointList1, "minimizing_pointList1.txt")
     save_one_list(minimizing_pointList2, "minimizing_pointList2.txt")
