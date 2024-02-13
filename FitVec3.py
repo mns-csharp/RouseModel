@@ -22,17 +22,21 @@ def save_fit(list1: List[float], list2: List[float], list3: List[float], file_na
     with open(file_name, 'ab') as f:  # 'ab' mode for binary append
         np.savetxt(f, np.column_stack((list1, list2)), fmt='%f')
 
-def parse_vec3(line: str) -> Optional[np.ndarray]:
-    try:
-        return np.fromiter(line.strip().split(), dtype=float)
-    except ValueError:
-        return None
-
 def read_vec3(dir_path: str, file_name: str) -> np.ndarray:
     file_path = os.path.join(dir_path, file_name)
-    with open(file_path, 'r') as file:
-        vec3_list = [parse_vec3(line) for line in file if line.strip() and parse_vec3(line) is not None]
-    return np.array(vec3_list)
+    try:
+        # Load the entire file into a NumPy array, skipping lines that can't be converted to float
+        return np.loadtxt(file_path, dtype=float)
+    except ValueError:
+        # If there are lines that do not contain 3 float values, you could filter them out
+        with open(file_path, 'r') as file:
+            lines = file.readlines()
+        # Keep only the lines with exactly three float values
+        valid_lines = filter(lambda line: len(line.split()) == 3, lines)
+        # Create a list of tuples from the valid lines
+        vec3_tuples = [tuple(map(float, line.split())) for line in valid_lines]
+        # Convert the list of tuples into a NumPy array
+        return np.array(vec3_tuples, dtype=float)
 
 def fit(x_data: List[int], y_data: List[float]) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     print("x_data len in fit() :", len(x_data))
@@ -57,79 +61,88 @@ def fit(x_data: List[int], y_data: List[float]) -> Tuple[np.ndarray, np.ndarray,
     minimizing_point = params
     return (x_data, np.array(y_fit), np.array(minimizing_point))
 
-import numpy as np
-from typing import Optional, Tuple
-
 def C(vectors: np.ndarray, t: int) -> float:
-    n = len(vectors)
-    if t >= n or t < 0:
+    if t < 0 or t >= len(vectors):
         raise ValueError("Invalid value for t. It must be between 0 and n-1.")
-    sum = 0.0
-    for i in range(n - t):
-        sum += np.dot(vectors[i], vectors[i + t])
-    return sum / (n - t)
+    # Use NumPy's slicing and dot product for efficient computation
+    return np.mean(np.einsum('ij,ij->i', vectors[:-t], vectors[t:]))
 
 def ComputeCForRange(vectors: np.ndarray, max_lag: int = 1000, threshold: Optional[float] = None) -> Tuple[np.ndarray, np.ndarray]:
-    c0 = C(vectors, 0)  # This is the normalization factor
-    print(f"Normalization factor: {c0}")
+    n = len(vectors)
+    # Pre-compute all C values at once using NumPy's broadcasting and efficient operations
     lags = np.arange(max_lag + 1)
-    autocorrelations = []
-    for lag in lags:
-        c_value = C(vectors, lag)
-        normalized_autocorr = c_value / c0
-        print(f"Lag={lag}, Raw Autocorr={c_value}, Normalized Autocorr={normalized_autocorr}")
-        autocorrelations.append(normalized_autocorr)
-        # If a threshold is set and the normalized autocorrelation falls below it, stop the computation
-        if threshold is not None and normalized_autocorr < threshold:
-            break
-    # Convert the list of autocorrelations to a numpy array
-    autocorrelations_array = np.array(autocorrelations)
-    # The lags array may need to be truncated if a threshold was used
-    lags_array = lags[:len(autocorrelations_array)]
-    return lags_array, autocorrelations_array
+    autocorrelations = np.correlate(vectors[:,0], vectors[:,0], mode='full')[n-1:n+max_lag]/np.arange(n, n-max_lag-1, -1)
+    autocorrelations = autocorrelations / autocorrelations[0]  # Normalize the autocorrelations
+    if threshold is not None:
+        # Find the first index where the autocorrelation falls below the threshold
+        below_threshold_indices = np.where(autocorrelations < threshold)[0]
+        if below_threshold_indices.size > 0:
+            first_below_threshold = below_threshold_indices[0]
+            autocorrelations = autocorrelations[:first_below_threshold]
+            lags = lags[:first_below_threshold]
+    return lags, autocorrelations
 
-#if __name__ == "__main__":
-#    chain1Vec3List = np.array([[1.0,1.0,1.0],[2.0,2.0,2.0],[3.0,3.0,3.0],[4.0,4.0,4.0]])
-#    ComputeCForRange(chain1Vec3List, 4)
+'''
+if __name__ == "__main__":
+    chain1Vec3List = np.array([[1.0,1.0,1.0],[2.0,2.0,2.0],[3.0,3.0,3.0],[4.0,4.0,4.0]])
+    lags, autos = ComputeCForRange(chain1Vec3List, 3)
+    print(lags)
+    print(autos)
+'''
+
 
 if __name__ == "__main__":
     root_dir = r'/home/mohammad/bioshell_v4/BioShell/target/release/Sikorski_Figure_7/20240124_174800'
     #r"C:\git\rouse_data~~\20240124_174800---" #r"/home/mohammad/bioshell_v4/BioShell/target/release/Sikorski_Figure_7/20240115_053051/"
     #r"/home/mohammad/bioshell_v4/BioShell/target/release/Sikorski_Figure_7/20240124_174800/"
-
     r_end_vec = "r_end_vec.dat"
 
     dir1 = os.path.join(root_dir, "run00_inner100000_outer100_factor1_residue50")
     dir2 = os.path.join(root_dir, "run01_inner100000_outer100_factor1_residue100")
     dir3 = os.path.join(root_dir, "run02_inner100000_outer100_factor1_residue150")
 
-    print('data reading started')
+
+    print(f'Reading started for : {dir1}\{r_end_vec}')
     chain1Vec3List = read_vec3(dir_path=dir1, file_name=r_end_vec)
-    print(f'Reading done : {dir1}\{r_end_vec}')
-    chain2Vec3List = read_vec3(dir_path=dir2, file_name=r_end_vec)
-    print(f'Reading done : {dir2}\{r_end_vec}')
-    chain3Vec3List = read_vec3(dir_path=dir3, file_name=r_end_vec)
-    print(f'Reading done : {dir3}\{r_end_vec}')
-
-    print('Autocorr computation started')
+    print(f'Reading done')
+    print(f'Autocorr started for : {dir1}\{r_end_vec}')
     autocorr1Lags, autocorr1values = ComputeCForRange(chain1Vec3List)
-    print(f'Autocorr computation done for : {dir1}\{r_end_vec}')
+    print(f'Autocorr done')
+    print(f'Fitting started for : {dir1}\{r_end_vec}')
+    autocorr1LagsList = list(autocorr1Lags.tolist())
+    autocorr1valuesList = list(autocorr1values.tolist())
+    x_dataList1, y_fitList1, minimizing_pointList1 = fit(autocorr1LagsList, autocorr1valuesList)
+    print(f'Fitting done')
+
+
+    print(f'Reading started for : {dir2}\{r_end_vec}')
+    chain2Vec3List = read_vec3(dir_path=dir2, file_name=r_end_vec)
+    print(f'Reading done')
+    print(f'Autocorr started for : {dir2}\{r_end_vec}')
     autocorr2Lags, autocorr2values = ComputeCForRange(chain2Vec3List)
-    print(f'Autocorr computation done for : {dir2}\{r_end_vec}')
+    print(f'Autocorr done')
+    print(f'Fitting started for : {dir2}\{r_end_vec}')
+    autocorr2LagsList = list(autocorr2Lags.tolist())
+    autocorr2valuesList = list(autocorr2values.tolist())
+    x_dataList2, y_fitList2, minimizing_pointList2 = fit(autocorr2LagsList, autocorr2valuesList)
+    print(f'Fitting done')
+
+
+    print(f'Reading started for : {dir3}\{r_end_vec}')
+    chain3Vec3List = read_vec3(dir_path=dir3, file_name=r_end_vec)
+    print(f'Reading done')
+    print(f'Autocorr started for : {dir3}\{r_end_vec}')
     autocorr3Lags, autocorr3values = ComputeCForRange(chain3Vec3List)
-    print(f'Autocorr computation done for : {dir3}\{r_end_vec}')
+    print(f'Autocorr done')
+    print(f'Fitting started for : {dir3}\{r_end_vec}')
+    autocorr3LagsList = list(autocorr3Lags.tolist())
+    autocorr3valuesList = list(autocorr3values.tolist())
+    x_dataList3, y_fitList3, minimizing_pointList3 = fit(autocorr3LagsList, autocorr3valuesList)
+    print(f'Fitting done')
 
-    save_two_lists(autocorr1Lags.tolist(), autocorr1values.tolist(), "autocorr1.txt")
-    save_two_lists(autocorr2Lags.tolist(), autocorr2values.tolist(), "autocorr2.txt")
-    save_two_lists(autocorr3Lags.tolist(), autocorr3values.tolist(), "autocorr3.txt")
-
-    print('Fitting started')
-    x_dataList1, y_fitList1, minimizing_pointList1 = fit(autocorr1Lags, autocorr1values)
-    print(f'Autocorr computation done for : {dir1}\{r_end_vec}')
-    x_dataList2, y_fitList2, minimizing_pointList2 = fit(autocorr2Lags, autocorr2values)
-    print(f'Autocorr computation done for : {dir2}\{r_end_vec}')
-    x_dataList3, y_fitList3, minimizing_pointList3 = fit(autocorr3Lags, autocorr3values)
-    print(f'Autocorr computation done for : {dir3}\{r_end_vec}')
+    save_two_lists(autocorr1Lags, autocorr1values, "autocorr1.txt")
+    save_two_lists(autocorr2Lags, autocorr2values, "autocorr2.txt")
+    save_two_lists(autocorr3Lags, autocorr3values, "autocorr3.txt")
 
     save_one_list(minimizing_pointList1, "minimizing_pointList1.txt")
     save_one_list(minimizing_pointList2, "minimizing_pointList2.txt")
