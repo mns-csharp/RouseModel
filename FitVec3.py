@@ -6,100 +6,38 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from scipy.optimize import OptimizeWarning
 import warnings
+from typing import List, Tuple, Optional
 
-def save_one_list(lags, file_name):
+def save_one_list(lags: np.ndarray, file_name: str) -> None:
     data_to_save = np.column_stack((lags))
     np.savetxt(file_name, data_to_save, fmt='%f', comments='')
 
-def save_two_lists(lags, autocorrelation_values, file_name):
+def save_two_lists(lags: List[int], autocorrelation_values: List[float], file_name: str) -> None:
     data_to_save = np.column_stack((lags, autocorrelation_values))
     np.savetxt(file_name, data_to_save, fmt='%f', comments='')
 
-
-def save_fit(list1, list2, list3, file_name):
+def save_fit(list1: List[float], list2: List[float], list3: List[float], file_name: str) -> None:
     data_to_save = np.column_stack((list3))
     np.savetxt(file_name, data_to_save, fmt='%f', comments='')
     with open(file_name, 'ab') as f:  # 'ab' mode for binary append
         np.savetxt(f, np.column_stack((list1, list2)), fmt='%f')
 
-def parse_vec3(line):
+def parse_vec3(line: str) -> Optional[np.ndarray]:
     try:
         return np.fromiter(line.strip().split(), dtype=float)
     except ValueError:
         return None
 
-def read_vec3(dir_path, file_name):
+def read_vec3(dir_path: str, file_name: str) -> np.ndarray:
     file_path = os.path.join(dir_path, file_name)
     with open(file_path, 'r') as file:
         vec3_list = [parse_vec3(line) for line in file if line.strip() and parse_vec3(line) is not None]
     return np.array(vec3_list)
 
-def autocorrelation_function(vectors, t):
-    N = vectors.shape[0] - t
-    mean = np.mean(vectors[:N], axis=0)
-    C_t = np.sum((vectors[:N] - mean) * (vectors[t:N+t] - mean), axis=0)
-    return np.sum(C_t)
-
-def autocorrelation_vec3(data, threshold_min=0.0001, threshold_max=0.9999, num_lag=1000):
-    print("length of data", len(data))
-    n = len(data)
-    mean = np.mean(data, axis=0)
-    # Pre-calculate squared differences from the mean for each data point
-    diff = data - mean
-    variance = np.mean(np.sum(diff**2, axis=1))
-    # List to hold the results
-    results = []
-    # Function to calculate autocorrelation for a given lag
-    def calc_autocorrelation(t):
-        # Element-wise multiplication followed by sum over all elements
-        autocorrelation = np.sum(diff[:n - t] * diff[t:], axis=0)
-        autocorrelation = np.sum(autocorrelation)  # Sum over all dimensions
-        autocorrelation /= ((n - t) * variance)
-        return autocorrelation
-    # Calculate autocorrelation for each lag
-    for t in range(min(num_lag, n)):
-        autocorrelation = calc_autocorrelation(t)
-        # Only include autocorrelation if within the specified thresholds
-        if threshold_min <= autocorrelation <= threshold_max:
-            results.append((t, autocorrelation))
-    # Sort the results by lag
-    sorted_results = sorted(results, key=lambda x: x[0])
-    # Extract lags and autocorrelation_values from the sorted results
-    lags, autocorrelation_values = zip(*sorted_results) if sorted_results else ([], [])
-    return list(lags), list(autocorrelation_values)
-
-def autocorrelation_list_normalized(vectors, max_lag=1000, threshold=None):
-    if not isinstance(vectors, np.ndarray) or vectors.ndim != 2:
-        raise ValueError("Input 'vectors' must be a 2D NumPy array.")
-    n_vectors, vector_length = vectors.shape
-    # Pre-compute mean and normalization factor
-    mean_vectors = np.mean(vectors, axis=0)
-    vectors_centered = vectors - mean_vectors
-    norm_factor = np.sum(vectors_centered ** 2)  # Summing over all elements to get a scalar
-    # Initialize autocorrelation array
-    autocorrelations = np.zeros(max_lag)
-    # Compute autocorrelation for each lag
-    for tau in range(max_lag):
-        # Avoid computing the autocorrelation beyond the number of vectors
-        if tau >= n_vectors:
-            break
-        product = np.sum(vectors_centered[:-tau if tau > 0 else None] * vectors_centered[tau:], axis=0)
-        autocorrelations[tau] = np.sum(product)
-    # Normalize the autocorrelation values
-    autocorrelations /= norm_factor  # Now this is a scalar division
-    # Apply threshold if given
-    if threshold is not None:
-        mask = autocorrelations >= threshold
-        lags = np.arange(max_lag)[mask]
-        autocorrelations = autocorrelations[mask]
-    else:
-        lags = np.arange(max_lag)
-    return lags, autocorrelations
-
-def fit(x_data, y_data):
+def fit(x_data: List[int], y_data: List[float]) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     print("x_data len in fit() :", len(x_data))
     print("y_data len in fit() :", len(y_data))
-    def model(x, a, b):
+    def model(x: np.ndarray, a: float, b: float) -> np.ndarray:
         return a * np.exp((-1)*b * x)
     x_data = np.array(x_data)
     y_data = np.array(y_data)
@@ -111,90 +49,129 @@ def fit(x_data, y_data):
             print("Fitted params:", params)
     except OptimizeWarning:
         print("Optimization warning occurred while fitting the curve.")
-        return x_data, [], initial_guess
+        return x_data, np.array([]), np.array(initial_guess)
     except RuntimeError as e:
         print("Error occurred during curve fitting:", e)
-        return x_data, [], initial_guess
+        return x_data, np.array([]), np.array(initial_guess)
     y_fit = model(x_data, *params)
     minimizing_point = params
     return (x_data, np.array(y_fit), np.array(minimizing_point))
 
+def autocorrelation_function(vectors: np.ndarray, t: int) -> float:
+    # N is the number of vectors minus the lag 't'. This determines how many terms
+    # will be included in the autocorrelation calculation: you can't use vectors
+    # beyond the end of the dataset, so you stop 't' terms early.
+    N = vectors.shape[0] - t
+    # Compute C_t, the autocorrelation for lag 't'. This is done by element-wise
+    # multiplication of the first N vectors with the vectors from t to N+t.
+    # The mean is not subtracted from the vectors because it's assumed to be already
+    # centered (mean subtracted) before this function is called.
+    C_t = np.sum((vectors[:N]) * (vectors[t:N+t]), axis=0)
+    # Sum all the elements of C_t to get a single autocorrelation value for lag 't'.
+    # This collapses the result to a scalar, which is the sum of autocorrelations
+    # for all individual elements/dimensions of the vectors.
+    return np.sum(C_t)
 
-root_dir = r"/home/mohammad/bioshell_v4/BioShell/target/release/Sikorski_Figure_7/20240115_053051/"
-#r"/home/mohammad/bioshell_v4/BioShell/target/release/Sikorski_Figure_7/20240124_174800/" 
-##r"C:\git\rouse_data~~\20240124_174800---"
-r_end_vec = "r_end_vec.dat"
+import numpy as np
+from typing import Optional, Tuple
 
-dir1 = os.path.join(root_dir, "run03_inner1000_outer1000_factor10_residue132")
-dir2 = os.path.join(root_dir, "run10_inner1000_outer1000_factor10_residue416")
-dir3 = os.path.join(root_dir, "run17_inner1000_outer1000_factor10_residue701")
+def autocorrelation_list_normalized(vectors: np.ndarray, max_lag: int = 1000, threshold: Optional[float] = None) -> Tuple[np.ndarray, np.ndarray]:
+    n = len(vectors)
+    autocorrelations = np.zeros(max_lag)
 
-chain1Vec3List = read_vec3(dir_path=dir1, file_name=r_end_vec)
-chain2Vec3List = read_vec3(dir_path=dir2, file_name=r_end_vec)
-chain3Vec3List = read_vec3(dir_path=dir3, file_name=r_end_vec)
+    # Calculate denominator (sum of the norms squared)
+    denominator = np.sum(np.linalg.norm(vectors, axis=1) ** 2)
+
+    # Calculate autocorrelation for each lag
+    for t in range(max_lag):
+        numerator = 0
+        for i in range(n - t):
+            numerator += np.dot(vectors[i], vectors[i + t])
+
+        autocorrelations[t] = numerator / denominator
+
+        # If a threshold is provided, stop when the first autocorrelation coefficient below it is encountered
+        if threshold is not None and autocorrelations[t] < threshold:
+            return autocorrelations[:t], np.arange(t)
+
+    return autocorrelations, np.arange(max_lag)
+
+if __name__ == "__main__":
+    root_dir = r"C:\git\rouse_data~~\20240124_174800---" #r"/home/mohammad/bioshell_v4/BioShell/target/release/Sikorski_Figure_7/20240115_053051/"
+    #r"/home/mohammad/bioshell_v4/BioShell/target/release/Sikorski_Figure_7/20240124_174800/"
+
+    r_end_vec = "r_end_vec.dat"
+
+    dir1 = os.path.join(root_dir, "run00_inner100000_outer100_factor1_residue50")
+    dir2 = os.path.join(root_dir, "run01_inner100000_outer100_factor1_residue100")
+    dir3 = os.path.join(root_dir, "run02_inner100000_outer100_factor1_residue150")
+
+    chain1Vec3List = read_vec3(dir_path=dir1, file_name=r_end_vec)
+    chain2Vec3List = read_vec3(dir_path=dir2, file_name=r_end_vec)
+    chain3Vec3List = read_vec3(dir_path=dir3, file_name=r_end_vec)
 
 
-autocorr1Lags, autocorr1values = autocorrelation_vec3(chain1Vec3List)
-autocorr2Lags, autocorr2values = autocorrelation_vec3(chain2Vec3List)
-autocorr3Lags, autocorr3values = autocorrelation_vec3(chain3Vec3List)
+    autocorr1Lags, autocorr1values = autocorrelation_list_normalized(chain1Vec3List)
+    autocorr2Lags, autocorr2values = autocorrelation_list_normalized(chain2Vec3List)
+    autocorr3Lags, autocorr3values = autocorrelation_list_normalized(chain3Vec3List)
 
-save_two_lists(autocorr1Lags, autocorr1values, "autocorr1.txt")
-save_two_lists(autocorr2Lags, autocorr2values, "autocorr2.txt")
-save_two_lists(autocorr3Lags, autocorr3values, "autocorr3.txt")
+    save_two_lists(autocorr1Lags, autocorr1values, "autocorr1.txt")
+    save_two_lists(autocorr2Lags, autocorr2values, "autocorr2.txt")
+    save_two_lists(autocorr3Lags, autocorr3values, "autocorr3.txt")
 
 
-x_dataList1, y_fitList1, minimizing_pointList1 = fit(autocorr1Lags, autocorr1values)
-x_dataList2, y_fitList2, minimizing_pointList2 = fit(autocorr2Lags, autocorr2values)
-x_dataList3, y_fitList3, minimizing_pointList3 = fit(autocorr3Lags, autocorr3values)
+    x_dataList1, y_fitList1, minimizing_pointList1 = fit(autocorr1Lags, autocorr1values)
+    x_dataList2, y_fitList2, minimizing_pointList2 = fit(autocorr2Lags, autocorr2values)
+    x_dataList3, y_fitList3, minimizing_pointList3 = fit(autocorr3Lags, autocorr3values)
 
-save_one_list(minimizing_pointList1, "minimizing_pointList1.txt")
-save_one_list(minimizing_pointList2, "minimizing_pointList2.txt")
-save_one_list(minimizing_pointList3, "minimizing_pointList3.txt")
+    save_one_list(minimizing_pointList1, "minimizing_pointList1.txt")
+    save_one_list(minimizing_pointList2, "minimizing_pointList2.txt")
+    save_one_list(minimizing_pointList3, "minimizing_pointList3.txt")
 
-save_two_lists(x_dataList1, y_fitList1, "fit1.txt")
-save_two_lists(x_dataList2, y_fitList2, "fit2.txt")
-save_two_lists(x_dataList3, y_fitList3, "fit3.txt")
+    save_two_lists(x_dataList1, y_fitList1, "fit1.txt")
+    save_two_lists(x_dataList2, y_fitList2, "fit2.txt")
+    save_two_lists(x_dataList3, y_fitList3, "fit3.txt")
 
-xxx = [minimizing_pointList1[0], minimizing_pointList2[0], minimizing_pointList3[0]]
-yyy = [minimizing_pointList1[1], minimizing_pointList2[1], minimizing_pointList3[1]]
+    xxx = [minimizing_pointList1[0], minimizing_pointList2[0], minimizing_pointList3[0]]
+    yyy = [minimizing_pointList1[1], minimizing_pointList2[1], minimizing_pointList3[1]]
 
-inverted_list = [1/y if y != 0 else 0 for y in yyy]  # Inverting each element
+    inverted_list = [1/y if y != 0 else 0 for y in yyy]  # Inverting each element
 
-print("x length", len(xxx), xxx)
-print("y length", len(inverted_list), inverted_list)
+    print("x length", len(xxx), xxx)
+    print("y length", len(inverted_list), inverted_list)
 
-# Convert list to numpy array for element-wise operations
-xxx = np.array(xxx)  
-inverted_list = np.array(inverted_list)
+    # Convert list to numpy array for element-wise operations
+    xxx = np.array(xxx)
+    inverted_list = np.array(inverted_list)
 
-# Since the plot is log-log, the line will be plotted as log(y) = m*log(x) + log(c)
-# Choose a point to define the line (x1, y1) and calculate c
-x1 = xxx[0]
-y1 = inverted_list[0]
-c = y1 / (x1 ** 2.2)
+    # Since the plot is log-log, the line will be plotted as log(y) = m*log(x) + log(c)
+    # Choose a point to define the line (x1, y1) and calculate c
+    x1 = xxx[0]
+    y1 = inverted_list[0]
+    c = y1 / (x1 ** 2.2)
 
-# Generate x values for the line
-line_x = np.linspace(min(xxx), max(xxx), 100)  # 100 points for a smooth line
-# Calculate the corresponding y values for the line
-line_y = c * line_x ** 2.2
+    # Generate x values for the line
+    line_x = np.linspace(min(xxx), max(xxx), 100)  # 100 points for a smooth line
+    # Calculate the corresponding y values for the line
+    line_y = c * line_x ** 2.2
 
-# Create the log-log plot
-plt.plot(xxx, inverted_list, 'o', label='Data Points')  # Plot the original points as a scatter plot
-plt.plot(line_x, line_y, label='y = 2.2x')  # Plot the straight line
+    # Create the log-log plot
+    plt.plot(xxx, inverted_list, 'o', label='Data Points')  # Plot the original points as a scatter plot
+    plt.plot(line_x, line_y, label='y = 2.2x')  # Plot the straight line
 
-plt.xscale('log')
-plt.yscale('log')
+    plt.xscale('log')
+    plt.yscale('log')
 
-# Set the title and labels
-plt.title('Log-Log Plot of Minimizing Points')
-plt.xlabel('X values (log scale)')
-plt.ylabel('Y values (log scale)')
+    # Set the title and labels
+    plt.title('Log-Log Plot of Minimizing Points')
+    plt.xlabel('X values (log scale)')
+    plt.ylabel('Y values (log scale)')
 
-# Add a legend to the plot
-plt.legend()
+    # Add a legend to the plot
+    plt.legend()
 
-# Save the plot with a logarithmic scale
-plt.savefig('log_plot.png', dpi=300)
+    # Save the plot with a logarithmic scale
+    plt.savefig('log_plot.png', dpi=300)
 
 
 
