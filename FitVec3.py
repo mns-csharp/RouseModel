@@ -24,19 +24,16 @@ def save_fit(list1: List[float], list2: List[float], list3: List[float], file_na
 
 def read_vec3(dir_path: str, file_name: str) -> np.ndarray:
     file_path = os.path.join(dir_path, file_name)
+    # Load the entire file into a NumPy array, attempting to filter out invalid lines
     try:
-        # Load the entire file into a NumPy array, skipping lines that can't be converted to float
-        return np.loadtxt(file_path, dtype=float)
-    except ValueError:
-        # If there are lines that do not contain 3 float values, you could filter them out
-        with open(file_path, 'r') as file:
-            lines = file.readlines()
-        # Keep only the lines with exactly three float values
-        valid_lines = filter(lambda line: len(line.split()) == 3, lines)
-        # Create a list of tuples from the valid lines
-        vec3_tuples = [tuple(map(float, line.split())) for line in valid_lines]
-        # Convert the list of tuples into a NumPy array
-        return np.array(vec3_tuples, dtype=float)
+        # Use NumPy's genfromtxt to handle invalid lines directly
+        data = np.genfromtxt(file_path, dtype=float, comments=None, invalid_raise=False)
+        # Filter out rows that do not have exactly 3 elements
+        return data[np.array([len(row) == 3 for row in data if row.size > 0])]
+    except ValueError as e:
+        # Handle cases where the file cannot be processed by NumPy
+        print(f"Error reading file {file_path}: {e}")
+        return np.empty((0, 3), dtype=float)
 
 def fit(x_data: List[int], y_data: List[float]) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     print("x_data len in fit() :", len(x_data))
@@ -61,25 +58,38 @@ def fit(x_data: List[int], y_data: List[float]) -> Tuple[np.ndarray, np.ndarray,
     minimizing_point = params
     return (x_data, np.array(y_fit), np.array(minimizing_point))
 
-def C(vectors: np.ndarray, t: int) -> float:
-    if t < 0 or t >= len(vectors):
-        raise ValueError("Invalid value for t. It must be between 0 and n-1.")
-    # Use NumPy's slicing and dot product for efficient computation
-    return np.mean(np.einsum('ij,ij->i', vectors[:-t], vectors[t:]))
-
 def ComputeCForRange(vectors: np.ndarray, max_lag: int = 1000, threshold: Optional[float] = None) -> Tuple[np.ndarray, np.ndarray]:
     n = len(vectors)
-    # Pre-compute all C values at once using NumPy's broadcasting and efficient operations
-    lags = np.arange(max_lag + 1)
-    autocorrelations = np.correlate(vectors[:,0], vectors[:,0], mode='full')[n-1:n+max_lag]/np.arange(n, n-max_lag-1, -1)
-    autocorrelations = autocorrelations / autocorrelations[0]  # Normalize the autocorrelations
+    # Ensure vectors is a 2D array
+    if vectors.ndim == 1:
+        vectors = vectors[:, np.newaxis]
+
+    # Efficiently compute the autocorrelation using FFT for all lags at once
+    fft_vectors = np.fft.fft(vectors, n=2*n, axis=0)  # Specify axis for FFT operation
+    autocorrelations = np.fft.ifft(fft_vectors * np.conjugate(fft_vectors), axis=0).real
+    autocorrelations = autocorrelations[:max_lag+1, :]  # Take only the needed lags
+
+    # Sum across the rows to collapse into a 1D array
+    autocorrelations = np.sum(autocorrelations, axis=1)
+
+    # Correct the normalizations for the number of overlapping points
+    overlap = np.arange(n, n-max_lag-1, -1)
+    autocorrelations /= overlap
+
+    # Normalize the autocorrelations to 1 at lag 0
+    autocorrelations /= autocorrelations[0]
+
+    # If threshold is specified, truncate the result where the autocorrelation falls below the threshold
     if threshold is not None:
-        # Find the first index where the autocorrelation falls below the threshold
         below_threshold_indices = np.where(autocorrelations < threshold)[0]
         if below_threshold_indices.size > 0:
             first_below_threshold = below_threshold_indices[0]
             autocorrelations = autocorrelations[:first_below_threshold]
-            lags = lags[:first_below_threshold]
+            lags = np.arange(first_below_threshold)
+        else:
+            lags = np.arange(max_lag + 1)
+    else:
+        lags = np.arange(max_lag + 1)
     return lags, autocorrelations
 
 '''
@@ -89,7 +99,6 @@ if __name__ == "__main__":
     print(lags)
     print(autos)
 '''
-
 
 if __name__ == "__main__":
     root_dir = r'/home/mohammad/bioshell_v4/BioShell/target/release/Sikorski_Figure_7/20240124_174800'
@@ -192,3 +201,4 @@ if __name__ == "__main__":
 
     # Save the plot with a logarithmic scale
     plt.savefig('log_plot.png', dpi=300)
+
